@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>GYOTAK Catch Report</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+  :root{--bg:#0B1E31;--surface:#112640;--border:#1e3a5c;--accent:#C5A059;--accent-dim:#8a6f3a;--text:#e6edf3;--muted:#7d8f9f;--success:#3fb950;--error:#f85149}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+  .dot{width:8px;height:8px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  header h1{font-size:17px;font-weight:700;color:var(--accent)}
+  header span{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);margin-left:auto}
+  .container{padding:16px;max-width:480px;margin:0 auto}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden}
+  .card-title{padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+  .card-body{padding:16px}
+  .flabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:6px}
+  textarea.finput{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;font-family:'Noto Sans JP',sans-serif;font-size:14px;border-radius:6px;outline:none;transition:border-color .2s;resize:vertical;min-height:80px}
+  textarea.finput:focus{border-color:var(--accent)}
+  textarea.finput::placeholder{color:#445566}
+  .photo-area{position:relative;border:2px dashed var(--border);border-radius:10px;padding:30px 16px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:12px}
+  .photo-area:active,.photo-area.dragover{border-color:var(--accent)}
+  .photo-area .icon{font-size:40px;margin-bottom:8px;display:block}
+  .photo-area .label{font-size:14px;color:var(--muted)}
+  .photo-area .sublabel{font-size:11px;color:var(--muted);margin-top:4px;opacity:.7}
+  .photo-area.has-photo{padding:0;border-style:solid;border-color:var(--accent)}
+  .photo-area.has-photo .placeholder{display:none}
+  .photo-area.has-photo .preview-wrap{display:block}
+  .preview-wrap{display:none;position:relative}
+  .preview-wrap img{width:100%;border-radius:8px;display:block}
+  .preview-wrap .change-btn{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;font-family:'Noto Sans JP',sans-serif;cursor:pointer}
+  .btn{width:100%;padding:14px;border:none;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px}
+  .btn:active{opacity:.8;transform:scale(.98)}
+  .btn-primary{background:var(--accent);color:var(--bg)}
+  .btn-primary:disabled{background:var(--accent-dim);opacity:.5;cursor:not-allowed}
+  .btn-secondary{background:transparent;border:1px solid var(--border);color:var(--muted)}
+  .spinner{display:inline-block;width:18px;height:18px;border:2px solid transparent;border-top:2px solid currentColor;border-radius:50%;animation:spin .6s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .result{display:none}
+  .result.show{display:block}
+  .result-title{font-size:20px;font-weight:900;color:var(--accent);margin-bottom:12px;line-height:1.4}
+  .result-location{font-size:13px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:4px}
+  .result-body{font-size:14px;line-height:1.8;margin-bottom:16px;white-space:pre-wrap}
+  .result-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+  .tag{background:rgba(197,160,89,.15);color:var(--accent);padding:4px 10px;border-radius:14px;font-size:12px;font-weight:700}
+  .result-image{width:100%;border-radius:8px;margin-bottom:16px}
+  .copy-area{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;position:relative}
+  .copy-area pre{font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-all;color:var(--text);max-height:200px;overflow-y:auto}
+  .copy-btn{position:absolute;top:8px;right:8px;background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:'Share Tech Mono',monospace}
+  .copy-btn:active{background:var(--accent);color:var(--bg)}
+  .err-msg{background:#1a0808;border:1px solid #5a1a1a;border-radius:8px;padding:10px 12px;margin-bottom:10px;display:none;font-size:13px;color:#ff8080}
+  .err-msg.show{display:block}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="dot"></div>
+  <h1>GYOTAK Catch Report</h1>
+  <span>v1.0</span>
+</header>
+
+<div class="container">
+  <!-- Input Form -->
+  <div id="formSection">
+    <div class="card">
+      <div class="card-title">写真</div>
+      <div class="card-body">
+        <div class="photo-area" id="photoArea" onclick="document.getElementById('fileInput').click()">
+          <div class="placeholder">
+            <span class="icon">📷</span>
+            <div class="label">タップして写真を選択</div>
+            <div class="sublabel">カメラ撮影 or ギャラリーから選択</div>
+          </div>
+          <div class="preview-wrap">
+            <img id="previewImg" src="" alt="">
+            <button class="change-btn" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">変更</button>
+          </div>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" capture="environment" style="display:none">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">コメント</div>
+      <div class="card-body">
+        <textarea class="finput" id="comment" placeholder="今日の釣果、天候、魚種など自由にメモ..." rows="3"></textarea>
+      </div>
+    </div>
+
+    <div class="err-msg" id="errMsg"></div>
+
+    <button class="btn btn-primary" id="submitBtn" disabled onclick="submit()">
+      記事を生成する
+    </button>
+  </div>
+
+  <!-- Result -->
+  <div class="result" id="resultSection">
+    <div class="card">
+      <div class="card-title">生成結果</div>
+      <div class="card-body">
+        <div class="result-title" id="resTitle"></div>
+        <div class="result-location" id="resLocation"></div>
+        <img class="result-image" id="resImage" src="" alt="">
+        <div class="result-body" id="resBody"></div>
+        <div class="result-tags" id="resTags"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">コピー用テキスト</div>
+      <div class="card-body" style="padding:0">
+        <div class="copy-area">
+          <button class="copy-btn" onclick="copyText()">COPY</button>
+          <pre id="copyText"></pre>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-secondary" onclick="reset()">新しいレポートを作成</button>
+  </div>
+</div>
+
+<script>
+const API = 'https://line-harness.gyotak.workers.dev/gyotak/catch-report';
+const AUTH = 'Bearer gyotak-gas-2026-secret-key';
+
+let selectedFile = null;
+let selectedBuffer = null;
+
+const fileInput = document.getElementById('fileInput');
+const photoArea = document.getElementById('photoArea');
+const submitBtn = document.getElementById('submitBtn');
+const errMsg = document.getElementById('errMsg');
+
+fileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  selectedFile = file;
+
+  // Read as ArrayBuffer to preserve EXIF
+  selectedBuffer = await file.arrayBuffer();
+
+  // Show preview from the original buffer (not re-encoded)
+  const blob = new Blob([selectedBuffer], { type: file.type });
+  const url = URL.createObjectURL(blob);
+  document.getElementById('previewImg').src = url;
+  photoArea.classList.add('has-photo');
+  submitBtn.disabled = false;
+  errMsg.classList.remove('show');
+});
+
+async function submit() {
+  if (!selectedFile || !selectedBuffer) return;
+
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="spinner"></span> 生成中...';
+  errMsg.classList.remove('show');
+
+  try {
+    // Build FormData with the original file (EXIF intact)
+    const blob = new Blob([selectedBuffer], { type: selectedFile.type });
+    const form = new FormData();
+    form.append('image', blob, selectedFile.name);
+    form.append('comment', document.getElementById('comment').value);
+
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Authorization': AUTH },
+      body: form,
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    showResult(data);
+  } catch (err) {
+    errMsg.textContent = err.message;
+    errMsg.classList.add('show');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '記事を生成する';
+  }
+}
+
+function showResult(data) {
+  document.getElementById('formSection').style.display = 'none';
+  const sec = document.getElementById('resultSection');
+  sec.classList.add('show');
+
+  document.getElementById('resTitle').textContent = data.title || '';
+
+  const locEl = document.getElementById('resLocation');
+  if (data.location) {
+    locEl.innerHTML = '📍 ' + escHtml(data.location) + '　' + escHtml(data.date || '');
+  } else if (data.date) {
+    locEl.textContent = data.date;
+  } else {
+    locEl.textContent = '';
+  }
+
+  if (data.imageUrl) {
+    document.getElementById('resImage').src = data.imageUrl;
+    document.getElementById('resImage').style.display = 'block';
+  }
+
+  document.getElementById('resBody').textContent = data.body || '';
+
+  const tagsEl = document.getElementById('resTags');
+  tagsEl.innerHTML = '';
+  (data.hashtags || []).forEach(tag => {
+    const span = document.createElement('span');
+    span.className = 'tag';
+    span.textContent = tag;
+    tagsEl.appendChild(span);
+  });
+
+  // Build copy text
+  const parts = [];
+  if (data.title) parts.push(data.title);
+  if (data.body) parts.push('', data.body);
+  if (data.hashtags?.length) parts.push('', data.hashtags.join(' '));
+  if (data.location) parts.push('', '📍 ' + data.location);
+  document.getElementById('copyText').textContent = parts.join('\n');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function copyText() {
+  const text = document.getElementById('copyText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'COPIED!';
+    setTimeout(() => btn.textContent = 'COPY', 1500);
+  });
+}
+
+function reset() {
+  selectedFile = null;
+  selectedBuffer = null;
+  document.getElementById('formSection').style.display = '';
+  document.getElementById('resultSection').classList.remove('show');
+  photoArea.classList.remove('has-photo');
+  document.getElementById('previewImg').src = '';
+  document.getElementById('comment').value = '';
+  fileInput.value = '';
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '記事を生成する';
+  errMsg.classList.remove('show');
+}
+</script>
+</body>
+</html>
