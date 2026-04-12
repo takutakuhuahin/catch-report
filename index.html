@@ -60,7 +60,7 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v1.8</span>
+  <span>v1.9</span>
 </header>
 
 <div class="container">
@@ -69,13 +69,9 @@
     <div class="card">
       <div class="card-title">写真</div>
       <div class="card-body">
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <button class="btn btn-secondary" style="flex:1;margin-bottom:0" onclick="document.getElementById('cameraInput').click()">📷 カメラで撮影</button>
-          <button class="btn btn-secondary" style="flex:1;margin-bottom:0" onclick="document.getElementById('galleryInput').click()">🖼 ギャラリーから選ぶ（複数可）</button>
-        </div>
+        <button class="btn btn-secondary" style="margin-bottom:12px" onclick="document.getElementById('cameraInput').click()">📷 カメラで撮影</button>
         <div class="photo-grid" id="photoGrid"></div>
         <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
-        <input type="file" id="galleryInput" accept="image/*" multiple style="display:none">
       </div>
     </div>
 
@@ -131,7 +127,6 @@ const AUTH = 'Bearer gyotak-gas-2026-secret-key';
 let photos = [];
 
 const cameraInput = document.getElementById('cameraInput');
-const galleryInput = document.getElementById('galleryInput');
 const photoGrid = document.getElementById('photoGrid');
 const submitBtn = document.getElementById('submitBtn');
 const errMsg = document.getElementById('errMsg');
@@ -202,7 +197,6 @@ async function handleFiles(e) {
   e.target.value = '';
 }
 cameraInput.addEventListener('change', handleFiles);
-galleryInput.addEventListener('change', handleFiles);
 
 function renderGrid() {
   photoGrid.innerHTML = '';
@@ -338,7 +332,6 @@ function reset() {
   photoGrid.innerHTML = '';
   document.getElementById('comment').value = '';
   cameraInput.value = '';
-  galleryInput.value = '';
   submitBtn.disabled = true;
   submitBtn.innerHTML = '記事を生成する';
   errMsg.classList.remove('show');
