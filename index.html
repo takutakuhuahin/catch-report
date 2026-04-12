@@ -106,6 +106,7 @@
       <div class="card-body">
         <div class="result-title" id="resTitle"></div>
         <div class="result-location" id="resLocation"></div>
+        <div class="result-location" id="resHash"></div>
         <img class="result-image" id="resImage" src="" alt="">
         <div class="result-body" id="resBody"></div>
         <div class="result-tags" id="resTags"></div>
@@ -199,11 +200,16 @@ function showResult(data) {
 
   const locEl = document.getElementById('resLocation');
   if (data.location) {
-    locEl.innerHTML = '📍 ' + escHtml(data.location) + '　' + escHtml(data.date || '');
-  } else if (data.date) {
-    locEl.textContent = data.date;
+    locEl.innerHTML = '📍 撮影エリア：' + escHtml(data.location);
   } else {
-    locEl.textContent = '';
+    locEl.style.display = 'none';
+  }
+
+  const hashEl = document.getElementById('resHash');
+  if (data.imageHash) {
+    hashEl.innerHTML = '🔐 写真認証：' + escHtml(data.imageHash.slice(0, 16)) + '...';
+  } else {
+    hashEl.style.display = 'none';
   }
 
   if (data.imageUrl) {
@@ -227,7 +233,8 @@ function showResult(data) {
   if (data.title) parts.push(data.title);
   if (data.body) parts.push('', data.body);
   if (data.hashtags?.length) parts.push('', data.hashtags.join(' '));
-  if (data.location) parts.push('', '📍 ' + data.location);
+  if (data.location) parts.push('', '📍 撮影エリア：' + data.location);
+  if (data.imageHash) parts.push('🔐 写真認証：' + data.imageHash.slice(0, 16) + '...');
   document.getElementById('copyText').textContent = parts.join('\n');
 }
 
