@@ -60,7 +60,7 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v1.6</span>
+  <span>v1.7</span>
 </header>
 
 <div class="container">
@@ -287,7 +287,7 @@ function showResult(data) {
   imgs.forEach((img, i) => {
     const loc = img.location
       ? img.location + (img.locationEn ? '（' + img.locationEn + '）' : '')
-      : '不明';
+      : '不明（GPS情報なし）';
     const dt = img._exifDateTime || data.date || '';
     const card = document.createElement('div');
     card.className = 'img-card';
@@ -308,7 +308,7 @@ function showResult(data) {
   imgs.forEach((img, i) => {
     const loc = img.location
       ? img.location + (img.locationEn ? '（' + img.locationEn + '）' : '')
-      : '不明';
+      : '不明（GPS情報なし）';
     const dt = img._exifDateTime || data.date || '';
     parts.push('', `📷 写真${i + 1}`);
     parts.push(`🔐 ハッシュ値：${img.imageHash || ''}`);
