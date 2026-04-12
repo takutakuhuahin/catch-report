@@ -43,7 +43,7 @@
   .result{display:none}
   .result.show{display:block}
   .result-title{font-size:20px;font-weight:900;color:var(--accent);margin-bottom:12px;line-height:1.4}
-  .result-location{font-size:13px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:4px}
+  .result-meta{font-size:13px;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:4px}
   .result-body{font-size:14px;line-height:1.8;margin-bottom:16px;white-space:pre-wrap}
   .result-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
   .tag{background:rgba(197,160,89,.15);color:var(--accent);padding:4px 10px;border-radius:14px;font-size:12px;font-weight:700}
@@ -61,7 +61,7 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v1.1</span>
+  <span>v1.2</span>
 </header>
 
 <div class="container">
@@ -105,9 +105,10 @@
       <div class="card-title">生成結果</div>
       <div class="card-body">
         <div class="result-title" id="resTitle"></div>
-        <div class="result-location" id="resLocation"></div>
-        <div class="result-location" id="resHash"></div>
-        <img class="result-image" id="resImage" src="" alt="">
+        <div class="result-meta" id="resHash"></div>
+        <div class="result-meta" id="resLocation"></div>
+        <div class="result-meta" id="resDate"></div>
+        <img class="result-image" id="resImage" src="" alt="" style="margin-top:10px">
         <div class="result-body" id="resBody"></div>
         <div class="result-tags" id="resTags"></div>
       </div>
@@ -133,11 +134,69 @@ const AUTH = 'Bearer gyotak-gas-2026-secret-key';
 
 let selectedFile = null;
 let selectedBuffer = null;
+let exifDateTime = null;
 
 const fileInput = document.getElementById('fileInput');
 const photoArea = document.getElementById('photoArea');
 const submitBtn = document.getElementById('submitBtn');
 const errMsg = document.getElementById('errMsg');
+
+// ─── EXIF DateTimeOriginal parser ───
+function parseExifDateTime(buf) {
+  const view = new DataView(buf);
+  if (view.getUint16(0) !== 0xFFD8) return null;
+  let off = 2;
+  while (off < view.byteLength - 1) {
+    const marker = view.getUint16(off);
+    if (marker === 0xFFE1) {
+      return readExifDateFromApp1(new DataView(buf, off + 4, view.getUint16(off + 2) - 2));
+    }
+    if ((marker & 0xFF00) !== 0xFF00) break;
+    off += 2 + view.getUint16(off + 2);
+  }
+  return null;
+}
+
+function readExifDateFromApp1(exif) {
+  const hdr = String.fromCharCode(exif.getUint8(0), exif.getUint8(1), exif.getUint8(2), exif.getUint8(3));
+  if (hdr !== 'Exif') return null;
+  const T = 6; // TIFF header offset
+  const le = exif.getUint16(T) === 0x4949;
+  const g16 = (o) => exif.getUint16(T + o, le);
+  const g32 = (o) => exif.getUint32(T + o, le);
+
+  // Walk IFD0 to find ExifIFD pointer (tag 0x8769)
+  const ifd0Off = g32(4);
+  const ifd0Cnt = g16(ifd0Off);
+  let exifIfdOff = 0;
+  for (let i = 0; i < ifd0Cnt; i++) {
+    const e = ifd0Off + 2 + i * 12;
+    if (g16(e) === 0x8769) { exifIfdOff = g32(e + 8); break; }
+  }
+  if (!exifIfdOff) return null;
+
+  // Walk ExifIFD to find DateTimeOriginal (tag 0x9003)
+  const exifCnt = g16(exifIfdOff);
+  for (let i = 0; i < exifCnt; i++) {
+    const e = exifIfdOff + 2 + i * 12;
+    if (g16(e) === 0x9003) {
+      const count = g32(e + 4);
+      const valOff = g32(e + 8);
+      let str = '';
+      for (let j = 0; j < count - 1; j++) {
+        str += String.fromCharCode(exif.getUint8(T + valOff + j));
+      }
+      return str; // e.g. "2026:04:12 09:23:15"
+    }
+  }
+  return null;
+}
+
+function formatFileDate(file) {
+  const d = new Date(file.lastModified);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}:${pad(d.getMonth()+1)}:${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
 
 fileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
@@ -146,6 +205,9 @@ fileInput.addEventListener('change', async (e) => {
 
   // Read as ArrayBuffer to preserve EXIF
   selectedBuffer = await file.arrayBuffer();
+
+  // Extract DateTimeOriginal from EXIF
+  exifDateTime = parseExifDateTime(selectedBuffer) || formatFileDate(file);
 
   // Show preview from the original buffer (not re-encoded)
   const blob = new Blob([selectedBuffer], { type: file.type });
@@ -182,6 +244,7 @@ async function submit() {
     }
 
     const data = await res.json();
+    data._exifDateTime = exifDateTime;
     showResult(data);
   } catch (err) {
     errMsg.textContent = err.message;
@@ -198,18 +261,29 @@ function showResult(data) {
 
   document.getElementById('resTitle').textContent = data.title || '';
 
+  // 1. Hash
+  const hashEl = document.getElementById('resHash');
+  if (data.imageHash) {
+    hashEl.innerHTML = '🔐 写真認証(ハッシュ値)：' + escHtml(data.imageHash.slice(0, 16)) + '...';
+  } else {
+    hashEl.style.display = 'none';
+  }
+
+  // 2. Location
   const locEl = document.getElementById('resLocation');
   if (data.location) {
-    locEl.innerHTML = '📍 撮影エリア：' + escHtml(data.location);
+    locEl.innerHTML = '📍 撮影場所：' + escHtml(data.location);
   } else {
     locEl.style.display = 'none';
   }
 
-  const hashEl = document.getElementById('resHash');
-  if (data.imageHash) {
-    hashEl.innerHTML = '🔐 写真認証：' + escHtml(data.imageHash.slice(0, 16)) + '...';
+  // 3. DateTime
+  const dateEl = document.getElementById('resDate');
+  const dt = data._exifDateTime || data.date || '';
+  if (dt) {
+    dateEl.innerHTML = '📅 撮影日時：' + escHtml(dt);
   } else {
-    hashEl.style.display = 'none';
+    dateEl.style.display = 'none';
   }
 
   if (data.imageUrl) {
@@ -233,8 +307,10 @@ function showResult(data) {
   if (data.title) parts.push(data.title);
   if (data.body) parts.push('', data.body);
   if (data.hashtags?.length) parts.push('', data.hashtags.join(' '));
-  if (data.location) parts.push('', '📍 撮影エリア：' + data.location);
-  if (data.imageHash) parts.push('🔐 写真認証：' + data.imageHash.slice(0, 16) + '...');
+  parts.push('');
+  if (data.imageHash) parts.push('🔐 写真認証(ハッシュ値)：' + data.imageHash.slice(0, 16) + '...');
+  if (data.location) parts.push('📍 撮影場所：' + data.location);
+  if (dt) parts.push('📅 撮影日時：' + dt);
   document.getElementById('copyText').textContent = parts.join('\n');
 }
 
@@ -254,6 +330,7 @@ function copyText() {
 function reset() {
   selectedFile = null;
   selectedBuffer = null;
+  exifDateTime = null;
   document.getElementById('formSection').style.display = '';
   document.getElementById('resultSection').classList.remove('show');
   photoArea.classList.remove('has-photo');
@@ -263,6 +340,9 @@ function reset() {
   submitBtn.disabled = true;
   submitBtn.innerHTML = '記事を生成する';
   errMsg.classList.remove('show');
+  document.getElementById('resHash').style.display = '';
+  document.getElementById('resLocation').style.display = '';
+  document.getElementById('resDate').style.display = '';
 }
 </script>
 </body>
