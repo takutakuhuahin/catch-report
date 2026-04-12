@@ -61,7 +61,7 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v1.2</span>
+  <span>v1.3</span>
 </header>
 
 <div class="container">
@@ -264,7 +264,7 @@ function showResult(data) {
   // 1. Hash
   const hashEl = document.getElementById('resHash');
   if (data.imageHash) {
-    hashEl.innerHTML = '🔐 写真認証(ハッシュ値)：' + escHtml(data.imageHash.slice(0, 16)) + '...';
+    hashEl.innerHTML = '🔐 写真認証(ハッシュ値)：' + escHtml(data.imageHash);
   } else {
     hashEl.style.display = 'none';
   }
