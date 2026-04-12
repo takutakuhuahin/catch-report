@@ -18,7 +18,6 @@
   .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden}
   .card-title{padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
   .card-body{padding:16px}
-  .flabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:6px}
   textarea.finput{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;font-family:'Noto Sans JP',sans-serif;font-size:14px;border-radius:6px;outline:none;transition:border-color .2s;resize:vertical;min-height:80px}
   textarea.finput:focus{border-color:var(--accent)}
   textarea.finput::placeholder{color:#445566}
@@ -27,12 +26,10 @@
   .photo-area .icon{font-size:40px;margin-bottom:8px;display:block}
   .photo-area .label{font-size:14px;color:var(--muted)}
   .photo-area .sublabel{font-size:11px;color:var(--muted);margin-top:4px;opacity:.7}
-  .photo-area.has-photo{padding:0;border-style:solid;border-color:var(--accent)}
-  .photo-area.has-photo .placeholder{display:none}
-  .photo-area.has-photo .preview-wrap{display:block}
-  .preview-wrap{display:none;position:relative}
-  .preview-wrap img{width:100%;border-radius:8px;display:block}
-  .preview-wrap .change-btn{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;font-family:'Noto Sans JP',sans-serif;cursor:pointer}
+  .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+  .photo-thumb{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
+  .photo-thumb img{width:100%;height:100%;object-fit:cover}
+  .photo-thumb .remove-btn{position:absolute;top:4px;right:4px;width:22px;height:22px;background:rgba(248,81,73,.9);border:none;border-radius:50%;color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;line-height:1}
   .btn{width:100%;padding:14px;border:none;border-radius:8px;font-family:'Noto Sans JP',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px}
   .btn:active{opacity:.8;transform:scale(.98)}
   .btn-primary{background:var(--accent);color:var(--bg)}
@@ -43,13 +40,15 @@
   .result{display:none}
   .result.show{display:block}
   .result-title{font-size:20px;font-weight:900;color:var(--accent);margin-bottom:12px;line-height:1.4}
-  .result-meta{font-size:13px;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:4px}
   .result-body{font-size:14px;line-height:1.8;margin-bottom:16px;white-space:pre-wrap}
   .result-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
   .tag{background:rgba(197,160,89,.15);color:var(--accent);padding:4px 10px;border-radius:14px;font-size:12px;font-weight:700}
-  .result-image{width:100%;border-radius:8px;margin-bottom:16px}
+  .img-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px}
+  .img-card-header{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:8px}
+  .img-card-meta{font-size:12px;color:var(--muted);margin-bottom:4px;word-break:break-all;line-height:1.5}
+  .img-card img{width:100%;border-radius:6px;margin-top:8px}
   .copy-area{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;position:relative}
-  .copy-area pre{font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-all;color:var(--text);max-height:200px;overflow-y:auto}
+  .copy-area pre{font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-all;color:var(--text);max-height:300px;overflow-y:auto}
   .copy-btn{position:absolute;top:8px;right:8px;background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:'Share Tech Mono',monospace}
   .copy-btn:active{background:var(--accent);color:var(--bg)}
   .err-msg{background:#1a0808;border:1px solid #5a1a1a;border-radius:8px;padding:10px 12px;margin-bottom:10px;display:none;font-size:13px;color:#ff8080}
@@ -61,27 +60,24 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v1.5</span>
+  <span>v1.6</span>
 </header>
 
 <div class="container">
   <!-- Input Form -->
   <div id="formSection">
     <div class="card">
-      <div class="card-title">写真</div>
+      <div class="card-title">写真（複数選択可）</div>
       <div class="card-body">
         <div class="photo-area" id="photoArea" onclick="document.getElementById('fileInput').click()">
           <div class="placeholder">
             <span class="icon">📷</span>
             <div class="label">タップして写真を選択</div>
-            <div class="sublabel">カメラ撮影 or ギャラリーから選択</div>
-          </div>
-          <div class="preview-wrap">
-            <img id="previewImg" src="" alt="">
-            <button class="change-btn" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">変更</button>
+            <div class="sublabel">カメラ撮影 or ギャラリーから複数選択</div>
           </div>
         </div>
-        <input type="file" id="fileInput" accept="image/*" style="display:none">
+        <div class="photo-grid" id="photoGrid"></div>
+        <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
       </div>
     </div>
 
@@ -102,16 +98,17 @@
   <!-- Result -->
   <div class="result" id="resultSection">
     <div class="card">
-      <div class="card-title">生成結果</div>
+      <div class="card-title">記事</div>
       <div class="card-body">
         <div class="result-title" id="resTitle"></div>
-        <div class="result-meta" id="resHash"></div>
-        <div class="result-meta" id="resLocation"></div>
-        <div class="result-meta" id="resDate"></div>
-        <img class="result-image" id="resImage" src="" alt="" style="margin-top:10px">
         <div class="result-body" id="resBody"></div>
         <div class="result-tags" id="resTags"></div>
       </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">写真データ</div>
+      <div class="card-body" id="resImages"></div>
     </div>
 
     <div class="card">
@@ -132,12 +129,12 @@
 const API = 'https://line-harness.gyotak.workers.dev/gyotak/catch-report';
 const AUTH = 'Bearer gyotak-gas-2026-secret-key';
 
-let selectedFile = null;
-let selectedBuffer = null;
-let exifDateTime = null;
+// Selected photos: { file, buffer, exifDateTime, previewUrl }
+let photos = [];
 
 const fileInput = document.getElementById('fileInput');
 const photoArea = document.getElementById('photoArea');
+const photoGrid = document.getElementById('photoGrid');
 const submitBtn = document.getElementById('submitBtn');
 const errMsg = document.getElementById('errMsg');
 
@@ -160,12 +157,10 @@ function parseExifDateTime(buf) {
 function readExifDateFromApp1(exif) {
   const hdr = String.fromCharCode(exif.getUint8(0), exif.getUint8(1), exif.getUint8(2), exif.getUint8(3));
   if (hdr !== 'Exif') return null;
-  const T = 6; // TIFF header offset
+  const T = 6;
   const le = exif.getUint16(T) === 0x4949;
   const g16 = (o) => exif.getUint16(T + o, le);
   const g32 = (o) => exif.getUint32(T + o, le);
-
-  // Walk IFD0 to find ExifIFD pointer (tag 0x8769)
   const ifd0Off = g32(4);
   const ifd0Cnt = g16(ifd0Off);
   let exifIfdOff = 0;
@@ -174,8 +169,6 @@ function readExifDateFromApp1(exif) {
     if (g16(e) === 0x8769) { exifIfdOff = g32(e + 8); break; }
   }
   if (!exifIfdOff) return null;
-
-  // Walk ExifIFD to find DateTimeOriginal (tag 0x9003)
   const exifCnt = g16(exifIfdOff);
   for (let i = 0; i < exifCnt; i++) {
     const e = exifIfdOff + 2 + i * 12;
@@ -183,10 +176,8 @@ function readExifDateFromApp1(exif) {
       const count = g32(e + 4);
       const valOff = g32(e + 8);
       let str = '';
-      for (let j = 0; j < count - 1; j++) {
-        str += String.fromCharCode(exif.getUint8(T + valOff + j));
-      }
-      return str; // e.g. "2026:04:12 09:23:15"
+      for (let j = 0; j < count - 1; j++) str += String.fromCharCode(exif.getUint8(T + valOff + j));
+      return str;
     }
   }
   return null;
@@ -199,37 +190,51 @@ function formatFileDate(file) {
 }
 
 fileInput.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  selectedFile = file;
-
-  // Read as ArrayBuffer to preserve EXIF
-  selectedBuffer = await file.arrayBuffer();
-
-  // Extract DateTimeOriginal from EXIF
-  exifDateTime = parseExifDateTime(selectedBuffer) || formatFileDate(file);
-
-  // Show preview from the original buffer (not re-encoded)
-  const blob = new Blob([selectedBuffer], { type: file.type });
-  const url = URL.createObjectURL(blob);
-  document.getElementById('previewImg').src = url;
-  photoArea.classList.add('has-photo');
-  submitBtn.disabled = false;
+  const files = Array.from(e.target.files);
+  for (const file of files) {
+    const buffer = await file.arrayBuffer();
+    const exifDateTime = parseExifDateTime(buffer) || formatFileDate(file);
+    const blob = new Blob([buffer], { type: file.type });
+    const previewUrl = URL.createObjectURL(blob);
+    photos.push({ file, buffer, exifDateTime, previewUrl });
+  }
+  renderGrid();
+  submitBtn.disabled = photos.length === 0;
   errMsg.classList.remove('show');
+  fileInput.value = '';
 });
 
-async function submit() {
-  if (!selectedFile || !selectedBuffer) return;
+function renderGrid() {
+  photoGrid.innerHTML = '';
+  photos.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'photo-thumb';
+    div.innerHTML = `<img src="${p.previewUrl}"><button class="remove-btn" onclick="removePhoto(${i})">×</button>`;
+    photoGrid.appendChild(div);
+  });
+  photoArea.querySelector('.sublabel').textContent =
+    photos.length > 0 ? `${photos.length}枚選択済み — タップで追加` : 'カメラ撮影 or ギャラリーから複数選択';
+}
 
+function removePhoto(i) {
+  URL.revokeObjectURL(photos[i].previewUrl);
+  photos.splice(i, 1);
+  renderGrid();
+  submitBtn.disabled = photos.length === 0;
+}
+
+async function submit() {
+  if (photos.length === 0) return;
   submitBtn.disabled = true;
   submitBtn.innerHTML = '<span class="spinner"></span> 生成中...';
   errMsg.classList.remove('show');
 
   try {
-    // Build FormData with the original file (EXIF intact)
-    const blob = new Blob([selectedBuffer], { type: selectedFile.type });
     const form = new FormData();
-    form.append('image', blob, selectedFile.name);
+    for (const p of photos) {
+      const blob = new Blob([p.buffer], { type: p.file.type });
+      form.append('image', blob, p.file.name);
+    }
     form.append('comment', document.getElementById('comment').value);
 
     const res = await fetch(API, {
@@ -244,7 +249,12 @@ async function submit() {
     }
 
     const data = await res.json();
-    data._exifDateTime = exifDateTime;
+    // Attach client-side EXIF dates to each image
+    if (data.images) {
+      data.images.forEach((img, i) => {
+        img._exifDateTime = photos[i]?.exifDateTime || null;
+      });
+    }
     showResult(data);
   } catch (err) {
     errMsg.textContent = err.message;
@@ -256,43 +266,9 @@ async function submit() {
 
 function showResult(data) {
   document.getElementById('formSection').style.display = 'none';
-  const sec = document.getElementById('resultSection');
-  sec.classList.add('show');
+  document.getElementById('resultSection').classList.add('show');
 
   document.getElementById('resTitle').textContent = data.title || '';
-
-  // 1. Hash
-  const hashEl = document.getElementById('resHash');
-  if (data.imageHash) {
-    hashEl.innerHTML = '🔐 写真認証(ハッシュ値)：' + escHtml(data.imageHash);
-  } else {
-    hashEl.style.display = 'none';
-  }
-
-  // 2. Location
-  const locEl = document.getElementById('resLocation');
-  if (data.location) {
-    let locText = data.location;
-    if (data.locationEn) locText += '（' + data.locationEn + '）';
-    locEl.innerHTML = '📍 撮影場所：' + escHtml(locText);
-  } else {
-    locEl.style.display = 'none';
-  }
-
-  // 3. DateTime
-  const dateEl = document.getElementById('resDate');
-  const dt = data._exifDateTime || data.date || '';
-  if (dt) {
-    dateEl.innerHTML = '📅 撮影日時：' + escHtml(dt);
-  } else {
-    dateEl.style.display = 'none';
-  }
-
-  if (data.imageUrl) {
-    document.getElementById('resImage').src = data.imageUrl;
-    document.getElementById('resImage').style.display = 'block';
-  }
-
   document.getElementById('resBody').textContent = data.body || '';
 
   const tagsEl = document.getElementById('resTags');
@@ -304,23 +280,45 @@ function showResult(data) {
     tagsEl.appendChild(span);
   });
 
-  // Build copy text
+  // Per-image cards
+  const imagesEl = document.getElementById('resImages');
+  imagesEl.innerHTML = '';
+  const imgs = data.images || [];
+  imgs.forEach((img, i) => {
+    const loc = img.location
+      ? img.location + (img.locationEn ? '（' + img.locationEn + '）' : '')
+      : '不明';
+    const dt = img._exifDateTime || data.date || '';
+    const card = document.createElement('div');
+    card.className = 'img-card';
+    card.innerHTML =
+      `<div class="img-card-header">📷 写真${i + 1}</div>` +
+      `<div class="img-card-meta">🔐 ハッシュ値：${esc(img.imageHash || '')}</div>` +
+      `<div class="img-card-meta">📍 撮影場所：${esc(loc)}</div>` +
+      `<div class="img-card-meta">📅 撮影日時：${esc(dt)}</div>` +
+      (img.imageUrl ? `<img src="${img.imageUrl}" alt="写真${i + 1}">` : '');
+    imagesEl.appendChild(card);
+  });
+
+  // Copy text
   const parts = [];
   if (data.title) parts.push(data.title);
   if (data.body) parts.push('', data.body);
   if (data.hashtags?.length) parts.push('', data.hashtags.join(' '));
-  parts.push('');
-  if (data.imageHash) parts.push('🔐 写真認証(ハッシュ値)：' + data.imageHash.slice(0, 16) + '...');
-  if (data.location) {
-    let locCopy = '📍 撮影場所：' + data.location;
-    if (data.locationEn) locCopy += '（' + data.locationEn + '）';
-    parts.push(locCopy);
-  }
-  if (dt) parts.push('📅 撮影日時：' + dt);
+  imgs.forEach((img, i) => {
+    const loc = img.location
+      ? img.location + (img.locationEn ? '（' + img.locationEn + '）' : '')
+      : '不明';
+    const dt = img._exifDateTime || data.date || '';
+    parts.push('', `📷 写真${i + 1}`);
+    parts.push(`🔐 ハッシュ値：${img.imageHash || ''}`);
+    parts.push(`📍 撮影場所：${loc}`);
+    parts.push(`📅 撮影日時：${dt}`);
+  });
   document.getElementById('copyText').textContent = parts.join('\n');
 }
 
-function escHtml(s) {
+function esc(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
@@ -334,21 +332,17 @@ function copyText() {
 }
 
 function reset() {
-  selectedFile = null;
-  selectedBuffer = null;
-  exifDateTime = null;
+  photos.forEach(p => URL.revokeObjectURL(p.previewUrl));
+  photos = [];
   document.getElementById('formSection').style.display = '';
   document.getElementById('resultSection').classList.remove('show');
-  photoArea.classList.remove('has-photo');
-  document.getElementById('previewImg').src = '';
+  photoGrid.innerHTML = '';
   document.getElementById('comment').value = '';
   fileInput.value = '';
   submitBtn.disabled = true;
   submitBtn.innerHTML = '記事を生成する';
   errMsg.classList.remove('show');
-  document.getElementById('resHash').style.display = '';
-  document.getElementById('resLocation').style.display = '';
-  document.getElementById('resDate').style.display = '';
+  renderGrid();
 }
 </script>
 </body>
