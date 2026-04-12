@@ -60,7 +60,7 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v1.9</span>
+  <span>v2.0</span>
 </header>
 
 <div class="container">
@@ -287,7 +287,7 @@ function showResult(data) {
     card.innerHTML =
       `<div class="img-card-header">📷 写真${i + 1}</div>` +
       `<div class="img-card-meta">🔐 ハッシュ値：${esc(img.imageHash || '')}</div>` +
-      `<div class="img-card-meta">📍 撮影場所：${esc(loc)}</div>` +
+      `<div class="img-card-meta">📍 撮影場所(GPS)：${esc(loc)}</div>` +
       `<div class="img-card-meta">📅 撮影日時：${esc(dt)}</div>` +
       (img.imageUrl ? `<img src="${img.imageUrl}" alt="写真${i + 1}">` : '');
     imagesEl.appendChild(card);
@@ -305,7 +305,7 @@ function showResult(data) {
     const dt = img._exifDateTime || data.date || '';
     parts.push('', `📷 写真${i + 1}`);
     parts.push(`🔐 ハッシュ値：${img.imageHash || ''}`);
-    parts.push(`📍 撮影場所：${loc}`);
+    parts.push(`📍 撮影場所(GPS)：${loc}`);
     parts.push(`📅 撮影日時：${dt}`);
   });
   document.getElementById('copyText').textContent = parts.join('\n');
