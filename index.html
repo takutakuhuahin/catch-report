@@ -60,24 +60,22 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v1.7</span>
+  <span>v1.8</span>
 </header>
 
 <div class="container">
   <!-- Input Form -->
   <div id="formSection">
     <div class="card">
-      <div class="card-title">写真（複数選択可）</div>
+      <div class="card-title">写真</div>
       <div class="card-body">
-        <div class="photo-area" id="photoArea" onclick="document.getElementById('fileInput').click()">
-          <div class="placeholder">
-            <span class="icon">📷</span>
-            <div class="label">タップして写真を選択</div>
-            <div class="sublabel">カメラ撮影 or ギャラリーから複数選択</div>
-          </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button class="btn btn-secondary" style="flex:1;margin-bottom:0" onclick="document.getElementById('cameraInput').click()">📷 カメラで撮影</button>
+          <button class="btn btn-secondary" style="flex:1;margin-bottom:0" onclick="document.getElementById('galleryInput').click()">🖼 ギャラリーから選ぶ（複数可）</button>
         </div>
         <div class="photo-grid" id="photoGrid"></div>
-        <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
+        <input type="file" id="galleryInput" accept="image/*" multiple style="display:none">
       </div>
     </div>
 
@@ -132,8 +130,8 @@ const AUTH = 'Bearer gyotak-gas-2026-secret-key';
 // Selected photos: { file, buffer, exifDateTime, previewUrl }
 let photos = [];
 
-const fileInput = document.getElementById('fileInput');
-const photoArea = document.getElementById('photoArea');
+const cameraInput = document.getElementById('cameraInput');
+const galleryInput = document.getElementById('galleryInput');
 const photoGrid = document.getElementById('photoGrid');
 const submitBtn = document.getElementById('submitBtn');
 const errMsg = document.getElementById('errMsg');
@@ -189,7 +187,7 @@ function formatFileDate(file) {
   return `${d.getFullYear()}:${pad(d.getMonth()+1)}:${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-fileInput.addEventListener('change', async (e) => {
+async function handleFiles(e) {
   const files = Array.from(e.target.files);
   for (const file of files) {
     const buffer = await file.arrayBuffer();
@@ -201,8 +199,10 @@ fileInput.addEventListener('change', async (e) => {
   renderGrid();
   submitBtn.disabled = photos.length === 0;
   errMsg.classList.remove('show');
-  fileInput.value = '';
-});
+  e.target.value = '';
+}
+cameraInput.addEventListener('change', handleFiles);
+galleryInput.addEventListener('change', handleFiles);
 
 function renderGrid() {
   photoGrid.innerHTML = '';
@@ -212,8 +212,7 @@ function renderGrid() {
     div.innerHTML = `<img src="${p.previewUrl}"><button class="remove-btn" onclick="removePhoto(${i})">×</button>`;
     photoGrid.appendChild(div);
   });
-  photoArea.querySelector('.sublabel').textContent =
-    photos.length > 0 ? `${photos.length}枚選択済み — タップで追加` : 'カメラ撮影 or ギャラリーから複数選択';
+  // grid handles display, no placeholder to update
 }
 
 function removePhoto(i) {
@@ -338,7 +337,8 @@ function reset() {
   document.getElementById('resultSection').classList.remove('show');
   photoGrid.innerHTML = '';
   document.getElementById('comment').value = '';
-  fileInput.value = '';
+  cameraInput.value = '';
+  galleryInput.value = '';
   submitBtn.disabled = true;
   submitBtn.innerHTML = '記事を生成する';
   errMsg.classList.remove('show');
