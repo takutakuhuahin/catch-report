@@ -61,7 +61,7 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v1.4</span>
+  <span>v1.5</span>
 </header>
 
 <div class="container">
@@ -272,7 +272,9 @@ function showResult(data) {
   // 2. Location
   const locEl = document.getElementById('resLocation');
   if (data.location) {
-    locEl.innerHTML = '📍 撮影場所：' + escHtml(data.location);
+    let locText = data.location;
+    if (data.locationEn) locText += '（' + data.locationEn + '）';
+    locEl.innerHTML = '📍 撮影場所：' + escHtml(locText);
   } else {
     locEl.style.display = 'none';
   }
@@ -309,7 +311,11 @@ function showResult(data) {
   if (data.hashtags?.length) parts.push('', data.hashtags.join(' '));
   parts.push('');
   if (data.imageHash) parts.push('🔐 写真認証(ハッシュ値)：' + data.imageHash.slice(0, 16) + '...');
-  if (data.location) parts.push('📍 撮影場所：' + data.location);
+  if (data.location) {
+    let locCopy = '📍 撮影場所：' + data.location;
+    if (data.locationEn) locCopy += '（' + data.locationEn + '）';
+    parts.push(locCopy);
+  }
   if (dt) parts.push('📅 撮影日時：' + dt);
   document.getElementById('copyText').textContent = parts.join('\n');
 }
