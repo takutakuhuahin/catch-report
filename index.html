@@ -18,14 +18,11 @@
   .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow:hidden}
   .card-title{padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
   .card-body{padding:16px}
-  textarea.finput{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;font-family:'Noto Sans JP',sans-serif;font-size:14px;border-radius:6px;outline:none;transition:border-color .2s;resize:vertical;min-height:80px}
-  textarea.finput:focus{border-color:var(--accent)}
-  textarea.finput::placeholder{color:#445566}
-  .photo-area{position:relative;border:2px dashed var(--border);border-radius:10px;padding:30px 16px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:12px}
-  .photo-area:active,.photo-area.dragover{border-color:var(--accent)}
-  .photo-area .icon{font-size:40px;margin-bottom:8px;display:block}
-  .photo-area .label{font-size:14px;color:var(--muted)}
-  .photo-area .sublabel{font-size:11px;color:var(--muted);margin-top:4px;opacity:.7}
+  textarea.finput,input.finput{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;font-family:'Noto Sans JP',sans-serif;font-size:14px;border-radius:6px;outline:none;transition:border-color .2s;resize:vertical;min-height:40px}
+  textarea.finput{min-height:80px}
+  textarea.finput:focus,input.finput:focus{border-color:var(--accent)}
+  textarea.finput::placeholder,input.finput::placeholder{color:#445566}
+  textarea.finput:read-only,input.finput:read-only{opacity:.7;border-color:transparent;background:transparent;resize:none}
   .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
   .photo-thumb{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
   .photo-thumb img{width:100%;height:100%;object-fit:cover}
@@ -35,13 +32,18 @@
   .btn-primary{background:var(--accent);color:var(--bg)}
   .btn-primary:disabled{background:var(--accent-dim);opacity:.5;cursor:not-allowed}
   .btn-secondary{background:transparent;border:1px solid var(--border);color:var(--muted)}
+  .btn-success{background:var(--success);color:#fff}
+  .btn-success:disabled{opacity:.5;cursor:not-allowed}
   .spinner{display:inline-block;width:18px;height:18px;border:2px solid transparent;border-top:2px solid currentColor;border-radius:50%;animation:spin .6s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   .result{display:none}
   .result.show{display:block}
-  .result-title{font-size:20px;font-weight:900;color:var(--accent);margin-bottom:12px;line-height:1.4}
-  .result-body{font-size:14px;line-height:1.8;margin-bottom:16px;white-space:pre-wrap}
-  .result-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+  .edit-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;margin-top:12px}
+  .edit-label:first-child{margin-top:0}
+  .tag-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;font-family:'Noto Sans JP',sans-serif;font-size:13px;border-radius:6px;outline:none}
+  .tag-input:focus{border-color:var(--accent)}
+  .tag-input:read-only{opacity:.7;border-color:transparent;background:transparent}
+  .result-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
   .tag{background:rgba(197,160,89,.15);color:var(--accent);padding:4px 10px;border-radius:14px;font-size:12px;font-weight:700}
   .img-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px}
   .img-card-header{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:8px}
@@ -53,6 +55,12 @@
   .copy-btn:active{background:var(--accent);color:var(--bg)}
   .err-msg{background:#1a0808;border:1px solid #5a1a1a;border-radius:8px;padding:10px 12px;margin-bottom:10px;display:none;font-size:13px;color:#ff8080}
   .err-msg.show{display:block}
+  .success-msg{background:#0a1a0a;border:1px solid #1a5a1a;border-radius:8px;padding:10px 12px;margin-bottom:10px;display:none;font-size:13px;color:var(--success)}
+  .success-msg.show{display:block}
+  .status-bar{display:flex;gap:8px;margin-bottom:12px}
+  .status-bar .step{flex:1;text-align:center;padding:6px;border-radius:6px;font-size:11px;font-weight:700;background:var(--bg);color:var(--muted);border:1px solid var(--border)}
+  .status-bar .step.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+  .status-bar .step.done{background:rgba(63,185,80,.15);color:var(--success);border-color:var(--success)}
 </style>
 </head>
 <body>
@@ -60,11 +68,11 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v2.0</span>
+  <span>v2.1</span>
 </header>
 
 <div class="container">
-  <!-- Input Form -->
+  <!-- Step 1: Input Form -->
   <div id="formSection">
     <div class="card">
       <div class="card-title">写真</div>
@@ -84,19 +92,29 @@
 
     <div class="err-msg" id="errMsg"></div>
 
-    <button class="btn btn-primary" id="submitBtn" disabled onclick="submit()">
-      記事を生成する
+    <button class="btn btn-primary" id="submitBtn" disabled onclick="generate()">
+      📝 記事を生成する
     </button>
   </div>
 
-  <!-- Result -->
+  <!-- Step 2: Result + Edit -->
   <div class="result" id="resultSection">
+    <div class="status-bar">
+      <div class="step done" id="step1">① 撮影</div>
+      <div class="step active" id="step2">② 編集</div>
+      <div class="step" id="step3">③ 投稿</div>
+    </div>
+
     <div class="card">
-      <div class="card-title">記事</div>
+      <div class="card-title">記事（編集可能）</div>
       <div class="card-body">
-        <div class="result-title" id="resTitle"></div>
-        <div class="result-body" id="resBody"></div>
-        <div class="result-tags" id="resTags"></div>
+        <div class="edit-label">タイトル</div>
+        <input class="finput" id="editTitle" readonly>
+        <div class="edit-label">本文</div>
+        <textarea class="finput" id="editBody" rows="8" readonly></textarea>
+        <div class="edit-label">ハッシュタグ</div>
+        <input class="tag-input" id="editTags" readonly>
+        <div class="result-tags" id="tagPreview"></div>
       </div>
     </div>
 
@@ -115,16 +133,21 @@
       </div>
     </div>
 
-    <button class="btn btn-secondary" onclick="reset()">新しいレポートを作成</button>
+    <div class="err-msg" id="errMsg2"></div>
+    <div class="success-msg" id="successMsg"></div>
+
+    <button class="btn btn-secondary" id="editBtn" onclick="enableEdit()">✏️ 編集して確定</button>
+    <button class="btn btn-success" id="publishBtn" style="display:none" onclick="publish()">📤 ブログに投稿</button>
+    <button class="btn btn-secondary" onclick="reset()">🔄 新しいレポートを作成</button>
   </div>
 </div>
 
 <script>
-const API = 'https://line-harness.gyotak.workers.dev/gyotak/catch-report';
+const API_BASE = 'https://line-harness.gyotak.workers.dev/gyotak';
 const AUTH = 'Bearer gyotak-gas-2026-secret-key';
 
-// Selected photos: { file, buffer, exifDateTime, previewUrl }
 let photos = [];
+let currentData = null; // stores full API response
 
 const cameraInput = document.getElementById('cameraInput');
 const photoGrid = document.getElementById('photoGrid');
@@ -146,7 +169,6 @@ function parseExifDateTime(buf) {
   }
   return null;
 }
-
 function readExifDateFromApp1(exif) {
   const hdr = String.fromCharCode(exif.getUint8(0), exif.getUint8(1), exif.getUint8(2), exif.getUint8(3));
   if (hdr !== 'Exif') return null;
@@ -175,7 +197,6 @@ function readExifDateFromApp1(exif) {
   }
   return null;
 }
-
 function formatFileDate(file) {
   const d = new Date(file.lastModified);
   const pad = (n) => String(n).padStart(2, '0');
@@ -206,9 +227,7 @@ function renderGrid() {
     div.innerHTML = `<img src="${p.previewUrl}"><button class="remove-btn" onclick="removePhoto(${i})">×</button>`;
     photoGrid.appendChild(div);
   });
-  // grid handles display, no placeholder to update
 }
-
 function removePhoto(i) {
   URL.revokeObjectURL(photos[i].previewUrl);
   photos.splice(i, 1);
@@ -216,7 +235,8 @@ function removePhoto(i) {
   submitBtn.disabled = photos.length === 0;
 }
 
-async function submit() {
+// ─── Step 1: Generate ───
+async function generate() {
   if (photos.length === 0) return;
   submitBtn.disabled = true;
   submitBtn.innerHTML = '<span class="spinner"></span> 生成中...';
@@ -230,54 +250,46 @@ async function submit() {
     }
     form.append('comment', document.getElementById('comment').value);
 
-    const res = await fetch(API, {
+    const res = await fetch(API_BASE + '/catch-report', {
       method: 'POST',
       headers: { 'Authorization': AUTH },
       body: form,
     });
-
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
       throw new Error(errData.error || `HTTP ${res.status}`);
     }
 
     const data = await res.json();
-    // Attach client-side EXIF dates to each image
     if (data.images) {
       data.images.forEach((img, i) => {
         img._exifDateTime = photos[i]?.exifDateTime || null;
       });
     }
+    currentData = data;
     showResult(data);
   } catch (err) {
     errMsg.textContent = err.message;
     errMsg.classList.add('show');
     submitBtn.disabled = false;
-    submitBtn.innerHTML = '記事を生成する';
+    submitBtn.innerHTML = '📝 記事を生成する';
   }
 }
 
+// ─── Step 2: Show result (read-only initially) ───
 function showResult(data) {
   document.getElementById('formSection').style.display = 'none';
   document.getElementById('resultSection').classList.add('show');
 
-  document.getElementById('resTitle').textContent = data.title || '';
-  document.getElementById('resBody').textContent = data.body || '';
+  document.getElementById('editTitle').value = data.title || '';
+  document.getElementById('editBody').value = data.body || '';
+  document.getElementById('editTags').value = (data.hashtags || []).join(' ');
+  renderTagPreview();
 
-  const tagsEl = document.getElementById('resTags');
-  tagsEl.innerHTML = '';
-  (data.hashtags || []).forEach(tag => {
-    const span = document.createElement('span');
-    span.className = 'tag';
-    span.textContent = tag;
-    tagsEl.appendChild(span);
-  });
-
-  // Per-image cards
+  // Image cards
   const imagesEl = document.getElementById('resImages');
   imagesEl.innerHTML = '';
-  const imgs = data.images || [];
-  imgs.forEach((img, i) => {
+  (data.images || []).forEach((img, i) => {
     const loc = img.location
       ? img.location + (img.locationEn ? '（' + img.locationEn + '）' : '')
       : '不明（GPS情報なし）';
@@ -293,16 +305,36 @@ function showResult(data) {
     imagesEl.appendChild(card);
   });
 
-  // Copy text
+  updateCopyText();
+}
+
+function renderTagPreview() {
+  const tags = document.getElementById('editTags').value.split(/\s+/).filter(Boolean);
+  const el = document.getElementById('tagPreview');
+  el.innerHTML = '';
+  tags.forEach(t => {
+    const span = document.createElement('span');
+    span.className = 'tag';
+    span.textContent = t;
+    el.appendChild(span);
+  });
+}
+
+function updateCopyText() {
+  const title = document.getElementById('editTitle').value;
+  const body = document.getElementById('editBody').value;
+  const tags = document.getElementById('editTags').value;
+  const imgs = currentData?.images || [];
+
   const parts = [];
-  if (data.title) parts.push(data.title);
-  if (data.body) parts.push('', data.body);
-  if (data.hashtags?.length) parts.push('', data.hashtags.join(' '));
+  if (title) parts.push(title);
+  if (body) parts.push('', body);
+  if (tags) parts.push('', tags);
   imgs.forEach((img, i) => {
     const loc = img.location
       ? img.location + (img.locationEn ? '（' + img.locationEn + '）' : '')
       : '不明（GPS情報なし）';
-    const dt = img._exifDateTime || data.date || '';
+    const dt = img._exifDateTime || currentData?.date || '';
     parts.push('', `📷 写真${i + 1}`);
     parts.push(`🔐 ハッシュ値：${img.imageHash || ''}`);
     parts.push(`📍 撮影場所(GPS)：${loc}`);
@@ -311,10 +343,66 @@ function showResult(data) {
   document.getElementById('copyText').textContent = parts.join('\n');
 }
 
+// ─── Edit mode ───
+function enableEdit() {
+  const titleEl = document.getElementById('editTitle');
+  const bodyEl = document.getElementById('editBody');
+  const tagsEl = document.getElementById('editTags');
+  titleEl.readOnly = false;
+  bodyEl.readOnly = false;
+  tagsEl.readOnly = false;
+
+  tagsEl.addEventListener('input', renderTagPreview);
+  titleEl.addEventListener('input', updateCopyText);
+  bodyEl.addEventListener('input', updateCopyText);
+  tagsEl.addEventListener('input', updateCopyText);
+
+  document.getElementById('editBtn').style.display = 'none';
+  document.getElementById('publishBtn').style.display = '';
+
+  document.getElementById('step2').className = 'step done';
+  document.getElementById('step3').className = 'step active';
+}
+
+// ─── Step 3: Publish ───
+async function publish() {
+  if (!currentData?.catchReportId) return;
+  const publishBtn = document.getElementById('publishBtn');
+  publishBtn.disabled = true;
+  publishBtn.innerHTML = '<span class="spinner"></span> 投稿中...';
+  document.getElementById('errMsg2').classList.remove('show');
+
+  try {
+    const res = await fetch(API_BASE + '/catch-reports/' + currentData.catchReportId, {
+      method: 'PATCH',
+      headers: { 'Authorization': AUTH, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: document.getElementById('editTitle').value,
+        body: document.getElementById('editBody').value,
+        hashtags: document.getElementById('editTags').value,
+      }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+
+    publishBtn.style.display = 'none';
+    document.getElementById('step3').className = 'step done';
+    const msg = document.getElementById('successMsg');
+    msg.textContent = '✅ 投稿データを保存しました（ID: ' + currentData.catchReportId.slice(0, 8) + '...）';
+    msg.classList.add('show');
+  } catch (err) {
+    document.getElementById('errMsg2').textContent = err.message;
+    document.getElementById('errMsg2').classList.add('show');
+    publishBtn.disabled = false;
+    publishBtn.innerHTML = '📤 ブログに投稿';
+  }
+}
+
 function esc(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
-
 function copyText() {
   const text = document.getElementById('copyText').textContent;
   navigator.clipboard.writeText(text).then(() => {
@@ -323,19 +411,25 @@ function copyText() {
     setTimeout(() => btn.textContent = 'COPY', 1500);
   });
 }
-
 function reset() {
   photos.forEach(p => URL.revokeObjectURL(p.previewUrl));
   photos = [];
+  currentData = null;
   document.getElementById('formSection').style.display = '';
   document.getElementById('resultSection').classList.remove('show');
   photoGrid.innerHTML = '';
   document.getElementById('comment').value = '';
   cameraInput.value = '';
   submitBtn.disabled = true;
-  submitBtn.innerHTML = '記事を生成する';
+  submitBtn.innerHTML = '📝 記事を生成する';
   errMsg.classList.remove('show');
-  renderGrid();
+  document.getElementById('errMsg2').classList.remove('show');
+  document.getElementById('successMsg').classList.remove('show');
+  document.getElementById('editBtn').style.display = '';
+  document.getElementById('publishBtn').style.display = 'none';
+  document.getElementById('step1').className = 'step done';
+  document.getElementById('step2').className = 'step active';
+  document.getElementById('step3').className = 'step';
 }
 </script>
 </body>
