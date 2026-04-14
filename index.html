@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -68,17 +68,16 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v2.4</span>
+  <span>v2.5</span>
 </header>
 
 <div class="container">
-  <!-- Step 1: Input Form -->
   <div id="formSection">
     <div class="card">
-      <div class="card-title">投稿者</div>
+      <div class="card-title">Author</div>
       <div class="card-body">
         <select class="finput" id="authorSelect" style="min-height:40px;resize:none">
-          <option value="">-- 選択してください --</option>
+          <option value="">-- Select Author --</option>
           <option value="TAKUYA OGURA（会長） / AIエージェント時代に備え商品データ構造化が次の時代の主流になること悟る。データ主義。記録(魚拓)が信頼になると信念もつ。GPS・トレーサビリティ・ブロックチェーンで改ざん不可なデータをお客様に届けることが正義だと信じる。">TAKUYA OGURA（会長）</option>
           <option value="MATUROS MATHURASAI（代表取締役） / 積極的でどんな時もプラス思考😊✨ 絵文字たくさんの明るいキャラ🐟 大手ホテルマーケティングマネージャー経験者。仕事に手を抜かない熱血タイプ💪">MATUROS（代表取締役）</option>
           <option value="佐藤大地（代表取締役） / 自分の役割をそつなくこなす。段取り・整理整頓が得意。勉強中の若社長。何事も低姿勢で挑む誠実タイプ。">佐藤大地（代表取締役）</option>
@@ -89,56 +88,55 @@
     </div>
 
     <div class="card">
-      <div class="card-title">写真</div>
+      <div class="card-title">Photo</div>
       <div class="card-body">
-        <button class="btn btn-secondary" style="margin-bottom:12px" onclick="document.getElementById('cameraInput').click()">📷 カメラで撮影</button>
+        <button class="btn btn-secondary" style="margin-bottom:12px" onclick="document.getElementById('cameraInput').click()">📷 Take Photo</button>
         <div class="photo-grid" id="photoGrid"></div>
         <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
       </div>
     </div>
 
     <div class="card">
-      <div class="card-title">コメント</div>
+      <div class="card-title">Comment</div>
       <div class="card-body">
-        <textarea class="finput" id="comment" placeholder="今日の釣果、天候、魚種など自由にメモ..." rows="3"></textarea>
+        <textarea class="finput" id="comment" placeholder="Fish species, weather, notes..." rows="3"></textarea>
       </div>
     </div>
 
     <div class="err-msg" id="errMsg"></div>
 
     <button class="btn btn-primary" id="submitBtn" disabled onclick="generate()">
-      📝 記事を生成する
+      📝 Generate Article
     </button>
   </div>
 
-  <!-- Step 2: Result + Edit -->
   <div class="result" id="resultSection">
     <div class="status-bar">
-      <div class="step done" id="step1">① 撮影</div>
-      <div class="step active" id="step2">② 編集</div>
-      <div class="step" id="step3">③ 投稿</div>
+      <div class="step done" id="step1">① Photo</div>
+      <div class="step active" id="step2">② Edit</div>
+      <div class="step" id="step3">③ Post</div>
     </div>
 
     <div class="card">
-      <div class="card-title">記事（編集可能）</div>
+      <div class="card-title">Article (Editable)</div>
       <div class="card-body">
-        <div class="edit-label">タイトル</div>
+        <div class="edit-label">Title</div>
         <input class="finput" id="editTitle" readonly>
-        <div class="edit-label">本文</div>
+        <div class="edit-label">Body</div>
         <textarea class="finput" id="editBody" rows="8" readonly></textarea>
-        <div class="edit-label">ハッシュタグ</div>
+        <div class="edit-label">Hashtags</div>
         <input class="tag-input" id="editTags" readonly>
         <div class="result-tags" id="tagPreview"></div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-title">写真データ</div>
+      <div class="card-title">Photo Data</div>
       <div class="card-body" id="resImages"></div>
     </div>
 
     <div class="card">
-      <div class="card-title">コピー用テキスト</div>
+      <div class="card-title">Copy Text</div>
       <div class="card-body" style="padding:0">
         <div class="copy-area">
           <button class="copy-btn" onclick="copyText()">COPY</button>
@@ -150,9 +148,9 @@
     <div class="err-msg" id="errMsg2"></div>
     <div class="success-msg" id="successMsg"></div>
 
-    <button class="btn btn-secondary" id="editBtn" onclick="enableEdit()">✏️ 編集して確定</button>
-    <button class="btn btn-success" id="publishBtn" style="display:none" onclick="publish()">📤 ブログに投稿</button>
-    <button class="btn btn-secondary" onclick="reset()">🔄 新しいレポートを作成</button>
+    <button class="btn btn-secondary" id="editBtn" onclick="enableEdit()">✏️ Edit</button>
+    <button class="btn btn-success" id="publishBtn" style="display:none" onclick="publish()">📤 Post to Blog</button>
+    <button class="btn btn-secondary" onclick="reset()">🔄 New Report</button>
   </div>
 </div>
 
@@ -161,14 +159,13 @@ const API_BASE = 'https://line-harness.gyotak.workers.dev/gyotak';
 const AUTH = 'Bearer gyotak-gas-2026-secret-key';
 
 let photos = [];
-let currentData = null; // stores full API response
+let currentData = null;
 
 const cameraInput = document.getElementById('cameraInput');
 const photoGrid = document.getElementById('photoGrid');
 const submitBtn = document.getElementById('submitBtn');
 const errMsg = document.getElementById('errMsg');
 
-// ─── EXIF DateTimeOriginal parser ───
 function parseExifDateTime(buf) {
   const view = new DataView(buf);
   if (view.getUint16(0) !== 0xFFD8) return null;
@@ -249,11 +246,10 @@ function removePhoto(i) {
   submitBtn.disabled = photos.length === 0;
 }
 
-// ─── Step 1: Generate ───
 async function generate() {
   if (photos.length === 0) return;
   submitBtn.disabled = true;
-  submitBtn.innerHTML = '<span class="spinner"></span> 生成中...';
+  submitBtn.innerHTML = '<span class="spinner"></span> Generating...';
   errMsg.classList.remove('show');
 
   try {
@@ -264,7 +260,7 @@ async function generate() {
     }
     const authorVal = document.getElementById('authorSelect').value;
     const rawComment = document.getElementById('comment').value;
-    const fullComment = authorVal ? `[投稿者: ${authorVal}] ${rawComment}` : rawComment;
+    const fullComment = authorVal ? `[Author: ${authorVal}] ${rawComment}` : rawComment;
     form.append('comment', fullComment);
 
     const res = await fetch(API_BASE + '/catch-report', {
@@ -289,11 +285,10 @@ async function generate() {
     errMsg.textContent = err.message;
     errMsg.classList.add('show');
     submitBtn.disabled = false;
-    submitBtn.innerHTML = '📝 記事を生成する';
+    submitBtn.innerHTML = '📝 Generate Article';
   }
 }
 
-// ─── Step 2: Show result (read-only initially) ───
 function showResult(data) {
   document.getElementById('formSection').style.display = 'none';
   document.getElementById('resultSection').classList.add('show');
@@ -303,22 +298,21 @@ function showResult(data) {
   document.getElementById('editTags').value = (data.hashtags || []).join(' ');
   renderTagPreview();
 
-  // Image cards
   const imagesEl = document.getElementById('resImages');
   imagesEl.innerHTML = '';
   (data.images || []).forEach((img, i) => {
     const loc = img.location
-      ? img.location + (img.locationEn ? '（' + img.locationEn + '）' : '')
-      : '不明（GPS情報なし）';
+      ? img.location + (img.locationEn ? ' (' + img.locationEn + ')' : '')
+      : 'Unknown (No GPS)';
     const dt = img._exifDateTime || data.date || '';
     const card = document.createElement('div');
     card.className = 'img-card';
     card.innerHTML =
-      `<div class="img-card-header">📷 写真${i + 1}</div>` +
-      `<div class="img-card-meta">🔐 ハッシュ値：${esc(img.imageHash || '')}</div>` +
-      `<div class="img-card-meta">📍 撮影場所(GPS)：${esc(loc)}</div>` +
-      `<div class="img-card-meta">📅 撮影日時：${esc(dt)}</div>` +
-      (img.r2ImageUrl ? `<img src="${img.r2ImageUrl}" alt="写真${i + 1}">` : '');
+      `<div class="img-card-header">📷 Photo ${i + 1}</div>` +
+      `<div class="img-card-meta">🔐 Hash: ${esc(img.imageHash || '')}</div>` +
+      `<div class="img-card-meta">📍 Location (GPS): ${esc(loc)}</div>` +
+      `<div class="img-card-meta">📅 Date & Time: ${esc(dt)}</div>` +
+      (img.r2ImageUrl ? `<img src="${img.r2ImageUrl}" alt="Photo ${i + 1}">` : '');
     imagesEl.appendChild(card);
   });
 
@@ -349,18 +343,17 @@ function updateCopyText() {
   if (tags) parts.push('', tags);
   imgs.forEach((img, i) => {
     const loc = img.location
-      ? img.location + (img.locationEn ? '（' + img.locationEn + '）' : '')
-      : '不明（GPS情報なし）';
+      ? img.location + (img.locationEn ? ' (' + img.locationEn + ')' : '')
+      : 'Unknown (No GPS)';
     const dt = img._exifDateTime || currentData?.date || '';
-    parts.push('', `📷 写真${i + 1}`);
-    parts.push(`🔐 ハッシュ値：${img.imageHash || ''}`);
-    parts.push(`📍 撮影場所(GPS)：${loc}`);
-    parts.push(`📅 撮影日時：${dt}`);
+    parts.push('', `📷 Photo ${i + 1}`);
+    parts.push(`🔐 Hash: ${img.imageHash || ''}`);
+    parts.push(`📍 Location (GPS): ${loc}`);
+    parts.push(`📅 Date & Time: ${dt}`);
   });
   document.getElementById('copyText').textContent = parts.join('\n');
 }
 
-// ─── Edit mode ───
 function enableEdit() {
   const titleEl = document.getElementById('editTitle');
   const bodyEl = document.getElementById('editBody');
@@ -381,12 +374,11 @@ function enableEdit() {
   document.getElementById('step3').className = 'step active';
 }
 
-// ─── Step 3: Publish ───
 async function publish() {
   if (!currentData?.catchReportId) return;
   const publishBtn = document.getElementById('publishBtn');
   publishBtn.disabled = true;
-  publishBtn.innerHTML = '<span class="spinner"></span> 投稿中...';
+  publishBtn.innerHTML = '<span class="spinner"></span> Posting...';
   document.getElementById('errMsg2').classList.remove('show');
 
   try {
@@ -407,13 +399,13 @@ async function publish() {
     publishBtn.style.display = 'none';
     document.getElementById('step3').className = 'step done';
     const msg = document.getElementById('successMsg');
-    msg.textContent = '✅ 投稿データを保存しました（ID: ' + currentData.catchReportId.slice(0, 8) + '...）';
+    msg.textContent = 'Saved (ID: ' + currentData.catchReportId.slice(0, 8) + '...)';
     msg.classList.add('show');
   } catch (err) {
     document.getElementById('errMsg2').textContent = err.message;
     document.getElementById('errMsg2').classList.add('show');
     publishBtn.disabled = false;
-    publishBtn.innerHTML = '📤 ブログに投稿';
+    publishBtn.innerHTML = '📤 Post to Blog';
   }
 }
 
@@ -438,7 +430,7 @@ function reset() {
   document.getElementById('comment').value = '';
   cameraInput.value = '';
   submitBtn.disabled = true;
-  submitBtn.innerHTML = '📝 記事を生成する';
+  submitBtn.innerHTML = '📝 Generate Article';
   errMsg.classList.remove('show');
   document.getElementById('errMsg2').classList.remove('show');
   document.getElementById('successMsg').classList.remove('show');
