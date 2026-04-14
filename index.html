@@ -68,7 +68,7 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v2.2</span>
+  <span>v2.3</span>
 </header>
 
 <div class="container">
@@ -301,7 +301,7 @@ function showResult(data) {
       `<div class="img-card-meta">🔐 ハッシュ値：${esc(img.imageHash || '')}</div>` +
       `<div class="img-card-meta">📍 撮影場所(GPS)：${esc(loc)}</div>` +
       `<div class="img-card-meta">📅 撮影日時：${esc(dt)}</div>` +
-      (img.imageUrl ? `<img src="${img.imageUrl}" alt="写真${i + 1}">` : '');
+      (img.r2ImageUrl ? `<img src="${img.r2ImageUrl}" alt="写真${i + 1}">` : '');
     imagesEl.appendChild(card);
   });
 
