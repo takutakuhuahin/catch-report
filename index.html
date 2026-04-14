@@ -68,12 +68,26 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v2.3</span>
+  <span>v2.4</span>
 </header>
 
 <div class="container">
   <!-- Step 1: Input Form -->
   <div id="formSection">
+    <div class="card">
+      <div class="card-title">投稿者</div>
+      <div class="card-body">
+        <select class="finput" id="authorSelect" style="min-height:40px;resize:none">
+          <option value="">-- 選択してください --</option>
+          <option value="TAKUYA OGURA（会長） / AIエージェント時代に備え商品データ構造化が次の時代の主流になること悟る。データ主義。記録(魚拓)が信頼になると信念もつ。GPS・トレーサビリティ・ブロックチェーンで改ざん不可なデータをお客様に届けることが正義だと信じる。">TAKUYA OGURA（会長）</option>
+          <option value="MATUROS MATHURASAI（代表取締役） / 積極的でどんな時もプラス思考😊✨ 絵文字たくさんの明るいキャラ🐟 大手ホテルマーケティングマネージャー経験者。仕事に手を抜かない熱血タイプ💪">MATUROS（代表取締役）</option>
+          <option value="佐藤大地（代表取締役） / 自分の役割をそつなくこなす。段取り・整理整頓が得意。勉強中の若社長。何事も低姿勢で挑む誠実タイプ。">佐藤大地（代表取締役）</option>
+          <option value="KO（加工・仕入担当） / 会長から直々に教わった魚のカットスキルと衛生管理技術を忠実に再現。後輩へ技術を教える指導者。真面目で優しく、イケメン20代。GYOTAK BOYSの1人。">KO（加工・仕入担当）</option>
+          <option value="NINE（加工・仕入担当） / 先輩KOを礼儀正しくサポート。KOからスキルを急成長中。肉体労働を積極的に行うGYOTAKの筋肉担当💪 GYOTAK BOYSの1人。">NINE（加工・仕入担当）</option>
+        </select>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-title">写真</div>
       <div class="card-body">
@@ -248,7 +262,10 @@ async function generate() {
       const blob = new Blob([p.buffer], { type: p.file.type });
       form.append('image', blob, p.file.name);
     }
-    form.append('comment', document.getElementById('comment').value);
+    const authorVal = document.getElementById('authorSelect').value;
+    const rawComment = document.getElementById('comment').value;
+    const fullComment = authorVal ? `[投稿者: ${authorVal}] ${rawComment}` : rawComment;
+    form.append('comment', fullComment);
 
     const res = await fetch(API_BASE + '/catch-report', {
       method: 'POST',
