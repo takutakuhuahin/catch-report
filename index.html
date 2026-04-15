@@ -93,6 +93,8 @@
         <button class="btn btn-secondary" style="margin-bottom:12px" onclick="document.getElementById('cameraInput').click()">📷 Take Photo</button>
         <div class="photo-grid" id="photoGrid"></div>
         <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
+        <div id="gpsStatus" style="margin-top:8px;font-size:13px;font-weight:700;display:none"></div>
+        <div id="gpsWarning" style="margin-top:6px;font-size:12px;color:var(--error);display:none"></div>
       </div>
     </div>
 
@@ -208,25 +210,102 @@ function readExifDateFromApp1(exif) {
   }
   return null;
 }
+function parseExifGps(buf) {
+  const view = new DataView(buf);
+  if (view.getUint16(0) !== 0xFFD8) return null;
+  let off = 2;
+  while (off < view.byteLength - 1) {
+    const marker = view.getUint16(off);
+    if (marker === 0xFFE1) {
+      const len = view.getUint16(off + 2);
+      const exif = new DataView(buf, off + 4, len - 2);
+      const hdr = String.fromCharCode(exif.getUint8(0), exif.getUint8(1), exif.getUint8(2), exif.getUint8(3));
+      if (hdr !== 'Exif') return null;
+      const T = 6;
+      const le = exif.getUint16(T) === 0x4949;
+      const g16 = (o) => exif.getUint16(T + o, le);
+      const g32 = (o) => exif.getUint32(T + o, le);
+      const ifd0Off = g32(4);
+      const ifd0Cnt = g16(ifd0Off);
+      let gpsOff = 0;
+      for (let i = 0; i < ifd0Cnt; i++) {
+        const e = ifd0Off + 2 + i * 12;
+        if (g16(e) === 0x8825) { gpsOff = g32(e + 8); break; }
+      }
+      if (!gpsOff) return null;
+      const gpsCnt = g16(gpsOff);
+      let latRef = '', lonRef = '', latOff = 0, lonOff = 0;
+      for (let i = 0; i < gpsCnt; i++) {
+        const e = gpsOff + 2 + i * 12;
+        const tag = g16(e);
+        if (tag === 1) latRef = String.fromCharCode(exif.getUint8(T + e + 8));
+        if (tag === 2) latOff = g32(e + 8);
+        if (tag === 3) lonRef = String.fromCharCode(exif.getUint8(T + e + 8));
+        if (tag === 4) lonOff = g32(e + 8);
+      }
+      if (!latOff || !lonOff) return null;
+      const readDMS = (o) => {
+        const d = g32(o) / (g32(o+4)||1);
+        const m = g32(o+8) / (g32(o+12)||1);
+        const s = g32(o+16) / (g32(o+20)||1);
+        return d + m/60 + s/3600;
+      };
+      let lat = readDMS(latOff);
+      let lon = readDMS(lonOff);
+      if (latRef === 'S') lat = -lat;
+      if (lonRef === 'W') lon = -lon;
+      if (lat === 0 && lon === 0) return null;
+      return { lat, lon };
+    }
+    if ((marker & 0xFF00) !== 0xFF00) break;
+    off += 2 + view.getUint16(off + 2);
+  }
+  return null;
+}
+
 function formatFileDate(file) {
   const d = new Date(file.lastModified);
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}:${pad(d.getMonth()+1)}:${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
+let hasGps = false;
 async function handleFiles(e) {
   const files = Array.from(e.target.files);
   for (const file of files) {
     const buffer = await file.arrayBuffer();
     const exifDateTime = parseExifDateTime(buffer) || formatFileDate(file);
+    const gps = parseExifGps(buffer);
     const blob = new Blob([buffer], { type: file.type });
     const previewUrl = URL.createObjectURL(blob);
-    photos.push({ file, buffer, exifDateTime, previewUrl });
+    photos.push({ file, buffer, exifDateTime, previewUrl, gps });
   }
   renderGrid();
-  submitBtn.disabled = photos.length === 0;
+  updateGpsStatus();
   errMsg.classList.remove('show');
   e.target.value = '';
+}
+function updateGpsStatus() {
+  hasGps = photos.some(p => p.gps);
+  const statusEl = document.getElementById('gpsStatus');
+  const warnEl = document.getElementById('gpsWarning');
+  if (photos.length === 0) {
+    statusEl.style.display = 'none';
+    warnEl.style.display = 'none';
+    submitBtn.disabled = true;
+    return;
+  }
+  statusEl.style.display = '';
+  if (hasGps) {
+    statusEl.innerHTML = '<span style="color:var(--success)">🟢 GPS OK</span>';
+    warnEl.style.display = 'none';
+    submitBtn.disabled = false;
+  } else {
+    statusEl.innerHTML = '<span style="color:var(--error)">🔴 No GPS</span>';
+    warnEl.style.display = '';
+    warnEl.textContent = '⚠️ GPS data not found. Please retake the photo only. Your comment will be kept.';
+    submitBtn.disabled = true;
+  }
 }
 cameraInput.addEventListener('change', handleFiles);
 
@@ -243,7 +322,7 @@ function removePhoto(i) {
   URL.revokeObjectURL(photos[i].previewUrl);
   photos.splice(i, 1);
   renderGrid();
-  submitBtn.disabled = photos.length === 0;
+  updateGpsStatus();
 }
 
 async function generate() {
