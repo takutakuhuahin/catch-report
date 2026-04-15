@@ -260,7 +260,15 @@ async function generate() {
     }
     const authorVal = document.getElementById('authorSelect').value;
     const rawComment = document.getElementById('comment').value;
-    const fullComment = authorVal ? `[Author: ${authorVal}] ${rawComment}` : rawComment;
+    let fullComment = rawComment;
+    if (authorVal) {
+      const slashIdx = authorVal.indexOf(' / ');
+      const name = slashIdx >= 0 ? authorVal.substring(0, slashIdx).trim() : authorVal;
+      const personality = slashIdx >= 0 ? authorVal.substring(slashIdx + 3).trim() : '';
+      fullComment = personality
+        ? `[投稿者: ${name} / 性格: ${personality}] ${rawComment}`
+        : `[投稿者: ${name}] ${rawComment}`;
+    }
     form.append('comment', fullComment);
 
     const res = await fetch(API_BASE + '/catch-report', {
