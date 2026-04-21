@@ -243,6 +243,13 @@ function parseExifGps(buf) {
         if (tag === 3) lonRef = String.fromCharCode(exif.getUint8(T + e + 8));
         if (tag === 4) lonOff = g32(e + 8);
       }
+      let altRef = 0, altOff = 0;
+      for (let i = 0; i < gpsCnt; i++) {
+        const e = gpsOff + 2 + i * 12;
+        const tag = g16(e);
+        if (tag === 5) altRef = exif.getUint8(T + e + 8);
+        if (tag === 6) altOff = g32(e + 8);
+      }
       if (!latOff || !lonOff) return null;
       const readDMS = (o) => {
         const d = g32(o) / (g32(o+4)||1);
@@ -255,12 +262,45 @@ function parseExifGps(buf) {
       if (latRef === 'S') lat = -lat;
       if (lonRef === 'W') lon = -lon;
       if (lat === 0 && lon === 0) return null;
-      return { lat, lon };
+      let alt = null;
+      if (altOff) {
+        const num = g32(altOff);
+        const den = g32(altOff + 4) || 1;
+        alt = num / den;
+        if (altRef === 1) alt = -alt;
+      }
+      return { lat, lon, alt };
     }
     if ((marker & 0xFF00) !== 0xFF00) break;
     off += 2 + view.getUint16(off + 2);
   }
   return null;
+}
+
+function stripJpegMetadata(buf) {
+  const src = new Uint8Array(buf);
+  const view = new DataView(src.buffer, src.byteOffset, src.byteLength);
+  if (src.byteLength < 4 || view.getUint16(0) !== 0xFFD8) return src;
+  const chunks = [src.subarray(0, 2)];
+  let off = 2;
+  while (off < src.byteLength - 1) {
+    if (src[off] !== 0xFF) break;
+    const marker = src[off + 1];
+    if (marker === 0xDA) { chunks.push(src.subarray(off)); break; }
+    if (marker === 0xD9) { chunks.push(src.subarray(off, off + 2)); break; }
+    if (off + 4 > src.byteLength) break;
+    const len = view.getUint16(off + 2);
+    if (off + 2 + len > src.byteLength) break;
+    const strip = (marker >= 0xE0 && marker <= 0xEF) || marker === 0xFE;
+    if (!strip) chunks.push(src.subarray(off, off + 2 + len));
+    off += 2 + len;
+  }
+  let total = 0;
+  for (const c of chunks) total += c.byteLength;
+  const out = new Uint8Array(total);
+  let pos = 0;
+  for (const c of chunks) { out.set(c, pos); pos += c.byteLength; }
+  return out;
 }
 
 function formatFileDate(file) {
@@ -276,9 +316,10 @@ async function handleFiles(e) {
     const buffer = await file.arrayBuffer();
     const exifDateTime = parseExifDateTime(buffer) || formatFileDate(file);
     const gps = parseExifGps(buffer);
-    const blob = new Blob([buffer], { type: file.type });
+    const stripped = stripJpegMetadata(buffer);
+    const blob = new Blob([stripped], { type: file.type });
     const previewUrl = URL.createObjectURL(blob);
-    photos.push({ file, buffer, exifDateTime, previewUrl, gps });
+    photos.push({ file, buffer, stripped, exifDateTime, previewUrl, gps });
   }
   renderGrid();
   updateGpsStatus();
@@ -297,7 +338,10 @@ function updateGpsStatus() {
   }
   statusEl.style.display = '';
   if (hasGps) {
-    statusEl.innerHTML = '<span style="color:var(--success)">🟢 GPS OK</span>';
+    statusEl.innerHTML = '<span style="color:var(--success)">🟢 GPS OK</span>'
+      + '<div style="margin-top:4px;font-size:11px;color:var(--muted);font-weight:400">'
+      + '🔒 GPS座標を記録しました(非公開) / 写真からは EXIF 剥離済'
+      + '</div>';
     warnEl.style.display = 'none';
     submitBtn.disabled = false;
   } else {
@@ -334,8 +378,12 @@ async function generate() {
   try {
     const form = new FormData();
     for (const p of photos) {
-      const blob = new Blob([p.buffer], { type: p.file.type });
+      const blob = new Blob([p.stripped], { type: p.file.type });
       form.append('image', blob, p.file.name);
+      form.append('gps_lat', p.gps ? String(p.gps.lat) : '');
+      form.append('gps_lng', p.gps ? String(p.gps.lon) : '');
+      form.append('gps_alt', p.gps && p.gps.alt != null ? String(p.gps.alt) : '');
+      form.append('photo_taken_at', p.exifDateTime || '');
     }
     const authorVal = document.getElementById('authorSelect').value;
     const rawComment = document.getElementById('comment').value;
