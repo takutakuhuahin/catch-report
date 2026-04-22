@@ -62,14 +62,27 @@
   .status-bar .step.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
   .status-bar .step.done{background:rgba(63,185,80,.15);color:var(--success);border-color:var(--success)}
   .fish-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-  .fish-row select{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;font-size:14px;border-radius:6px;outline:none;min-height:40px}
-  .fish-row select:focus{border-color:var(--accent)}
   .fish-row .weight-wrap{display:flex;align-items:center;gap:4px;flex-shrink:0}
   .fish-row input[type=number]{width:70px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;font-size:14px;border-radius:6px;outline:none;text-align:right}
   .fish-row input[type=number]:focus{border-color:var(--accent)}
   .fish-row .unit{color:var(--muted);font-size:13px;font-weight:700}
-  .fish-thumb{width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);flex-shrink:0;display:none}
-  .fish-thumb.visible{display:block}
+  /* Custom fish dropdown (replaces native select, supports thumbnail in list) */
+  .fish-dropdown{flex:1;position:relative;min-width:0}
+  .fish-dropdown-selected{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 8px;font-size:14px;border-radius:6px;min-height:44px;cursor:pointer;user-select:none}
+  .fish-dropdown.open .fish-dropdown-selected{border-color:var(--accent)}
+  .fish-dropdown-thumb{width:32px;height:32px;object-fit:cover;border-radius:4px;border:1px solid var(--border);flex-shrink:0}
+  .fish-dropdown-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fish-dropdown-label.placeholder{color:#445566}
+  .fish-dropdown-arrow{flex-shrink:0;color:var(--muted);font-size:12px;transition:transform .15s}
+  .fish-dropdown.open .fish-dropdown-arrow{transform:rotate(180deg)}
+  .fish-dropdown-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;max-height:280px;overflow-y:auto;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+  .fish-dropdown-list[hidden]{display:none}
+  .fish-dropdown-item{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--border);min-height:48px}
+  .fish-dropdown-item:last-child{border-bottom:none}
+  .fish-dropdown-item:hover,.fish-dropdown-item.active{background:rgba(197,160,89,.12)}
+  .fish-dropdown-item img{width:40px;height:40px;object-fit:cover;border-radius:4px;border:1px solid var(--border);flex-shrink:0}
+  .fish-dropdown-item img.missing{display:none}
+  .fish-dropdown-item span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -77,7 +90,7 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v3.00</span>
+  <span>v3.01</span>
 </header>
 
 <div class="container">
@@ -110,11 +123,11 @@
     <div class="card">
       <div class="card-title">Fish Catch (optional)</div>
       <div class="card-body" id="fishCatchBody">
-        <div class="fish-row"><img class="fish-thumb" alt=""><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
-        <div class="fish-row"><img class="fish-thumb" alt=""><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
-        <div class="fish-row"><img class="fish-thumb" alt=""><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
-        <div class="fish-row"><img class="fish-thumb" alt=""><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
-        <div class="fish-row"><img class="fish-thumb" alt=""><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
+        <div class="fish-row"><div class="fish-dropdown" data-value=""><div class="fish-dropdown-selected"><img class="fish-dropdown-thumb" alt="" hidden><span class="fish-dropdown-label placeholder">--</span><span class="fish-dropdown-arrow">▾</span></div><div class="fish-dropdown-list" hidden></div></div><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
+        <div class="fish-row"><div class="fish-dropdown" data-value=""><div class="fish-dropdown-selected"><img class="fish-dropdown-thumb" alt="" hidden><span class="fish-dropdown-label placeholder">--</span><span class="fish-dropdown-arrow">▾</span></div><div class="fish-dropdown-list" hidden></div></div><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
+        <div class="fish-row"><div class="fish-dropdown" data-value=""><div class="fish-dropdown-selected"><img class="fish-dropdown-thumb" alt="" hidden><span class="fish-dropdown-label placeholder">--</span><span class="fish-dropdown-arrow">▾</span></div><div class="fish-dropdown-list" hidden></div></div><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
+        <div class="fish-row"><div class="fish-dropdown" data-value=""><div class="fish-dropdown-selected"><img class="fish-dropdown-thumb" alt="" hidden><span class="fish-dropdown-label placeholder">--</span><span class="fish-dropdown-arrow">▾</span></div><div class="fish-dropdown-list" hidden></div></div><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
+        <div class="fish-row"><div class="fish-dropdown" data-value=""><div class="fish-dropdown-selected"><img class="fish-dropdown-thumb" alt="" hidden><span class="fish-dropdown-label placeholder">--</span><span class="fish-dropdown-arrow">▾</span></div><div class="fish-dropdown-list" hidden></div></div><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
       </div>
     </div>
 
@@ -184,34 +197,105 @@ let photos = [];
 let currentData = null;
 let fishMasterData = []; // cached from /api/fish-master
 
-// Fetch fish master on load
+// Fish thumbnail source (nothing hardcoded beyond this base)
+const FISH_THUMB_BASE = 'https://gyotak-shop.pages.dev/images/thumbs/';
+
+// Fetch fish master on load, then init custom dropdowns
 (async function loadFishMaster() {
   try {
     const res = await fetch('https://line-harness.gyotak.workers.dev/api/fish-master');
     const data = await res.json();
     if (data.success && data.fish_master) {
       fishMasterData = data.fish_master;
-      const selects = document.querySelectorAll('.fish-select');
-      selects.forEach(sel => {
-        fishMasterData.forEach(f => {
-          const opt = document.createElement('option');
-          opt.value = f.romaji;
-          opt.textContent = f.romaji;
-          sel.appendChild(opt);
-        });
-        sel.addEventListener('change', function() {
-          const img = this.closest('.fish-row').querySelector('.fish-thumb');
-          if (!this.value) { img.classList.remove('visible'); img.src = ''; return; }
-          img.src = 'https://gyotak-shop.pages.dev/images/' + encodeURIComponent(this.value) + '.jpg';
-          img.classList.add('visible');
-          img.onerror = function() { this.classList.remove('visible'); };
-        });
-      });
+      document.querySelectorAll('.fish-dropdown').forEach(initFishDropdown);
     }
   } catch (e) {
     console.warn('Fish master fetch failed, fallback to comment input:', e);
   }
 })();
+
+// Build one custom dropdown (populates list items + wires events).
+// Each list item: thumbnail + romaji name. Thumbnail 404 hides the img
+// (label still shows the name). Clicking an item commits the value,
+// updates the selected header (thumb + name), and closes the list.
+function initFishDropdown(dropdown) {
+  const selected = dropdown.querySelector('.fish-dropdown-selected');
+  const headerThumb = dropdown.querySelector('.fish-dropdown-thumb');
+  const label = dropdown.querySelector('.fish-dropdown-label');
+  const list = dropdown.querySelector('.fish-dropdown-list');
+
+  // Blank first entry to let users unset a choice.
+  list.innerHTML = '';
+  const blank = document.createElement('div');
+  blank.className = 'fish-dropdown-item';
+  blank.dataset.value = '';
+  const blankSpan = document.createElement('span');
+  blankSpan.textContent = '-- (none)';
+  blank.appendChild(blankSpan);
+  list.appendChild(blank);
+
+  fishMasterData.forEach(f => {
+    const item = document.createElement('div');
+    item.className = 'fish-dropdown-item';
+    item.dataset.value = f.romaji;
+    const img = document.createElement('img');
+    img.alt = '';
+    img.src = FISH_THUMB_BASE + encodeURIComponent(f.romaji) + '.jpg';
+    img.onerror = function() { this.classList.add('missing'); };
+    const span = document.createElement('span');
+    span.textContent = f.romaji;
+    item.appendChild(img);
+    item.appendChild(span);
+    list.appendChild(item);
+  });
+
+  selected.addEventListener('click', function(e) {
+    e.stopPropagation();
+    // Close any other open dropdown first (only one open at a time)
+    document.querySelectorAll('.fish-dropdown.open').forEach(d => {
+      if (d !== dropdown) {
+        d.classList.remove('open');
+        const otherList = d.querySelector('.fish-dropdown-list');
+        if (otherList) otherList.hidden = true;
+      }
+    });
+    const nowOpen = dropdown.classList.toggle('open');
+    list.hidden = !nowOpen;
+  });
+
+  list.addEventListener('click', function(e) {
+    const item = e.target.closest('.fish-dropdown-item');
+    if (!item) return;
+    e.stopPropagation();
+    const romaji = item.dataset.value || '';
+    dropdown.dataset.value = romaji;
+    if (romaji) {
+      label.textContent = romaji;
+      label.classList.remove('placeholder');
+      headerThumb.onerror = function() { this.hidden = true; };
+      headerThumb.src = FISH_THUMB_BASE + encodeURIComponent(romaji) + '.jpg';
+      headerThumb.hidden = false;
+    } else {
+      label.textContent = '--';
+      label.classList.add('placeholder');
+      headerThumb.hidden = true;
+      headerThumb.removeAttribute('src');
+    }
+    dropdown.classList.remove('open');
+    list.hidden = true;
+  });
+}
+
+// Close all dropdowns when clicking outside any .fish-dropdown
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.fish-dropdown')) {
+    document.querySelectorAll('.fish-dropdown.open').forEach(d => {
+      d.classList.remove('open');
+      const l = d.querySelector('.fish-dropdown-list');
+      if (l) l.hidden = true;
+    });
+  }
+});
 
 const cameraInput = document.getElementById('cameraInput');
 const photoGrid = document.getElementById('photoGrid');
@@ -451,10 +535,11 @@ async function generate() {
     // Collect fish_items from dropdowns (v3)
     const fishItems = [];
     document.querySelectorAll('.fish-row').forEach(row => {
-      const sel = row.querySelector('.fish-select');
+      const dropdown = row.querySelector('.fish-dropdown');
       const wInput = row.querySelector('.fish-weight');
-      if (sel.value) {
-        const master = fishMasterData.find(f => f.romaji === sel.value);
+      const romaji = dropdown && dropdown.dataset.value;
+      if (romaji) {
+        const master = fishMasterData.find(f => f.romaji === romaji);
         if (master) {
           fishItems.push({
             romaji: master.romaji,
@@ -633,7 +718,16 @@ function reset() {
   document.getElementById('resultSection').classList.remove('show');
   photoGrid.innerHTML = '';
   document.getElementById('comment').value = '';
-  document.querySelectorAll('.fish-select').forEach(s => s.value = '');
+  document.querySelectorAll('.fish-dropdown').forEach(d => {
+    d.dataset.value = '';
+    d.classList.remove('open');
+    const list = d.querySelector('.fish-dropdown-list');
+    if (list) list.hidden = true;
+    const label = d.querySelector('.fish-dropdown-label');
+    if (label) { label.textContent = '--'; label.classList.add('placeholder'); }
+    const thumb = d.querySelector('.fish-dropdown-thumb');
+    if (thumb) { thumb.hidden = true; thumb.removeAttribute('src'); }
+  });
   document.querySelectorAll('.fish-weight').forEach(w => w.value = '');
   cameraInput.value = '';
   submitBtn.disabled = true;
