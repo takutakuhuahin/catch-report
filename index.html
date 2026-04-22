@@ -94,7 +94,7 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v3.02</span>
+  <span>v3.03</span>
 </header>
 
 <div class="container">
@@ -270,10 +270,19 @@ function initFishDropdown(dropdown) {
     }
   });
 
+  // Touch: prevent touchstart from bubbling to any window-level touch
+  // handlers, and prevent the tap from being absorbed by overlay /
+  // scroll-close logic before the synthesized click reaches the item.
+  // passive:true lets the browser still scroll the list normally.
+  selected.addEventListener('touchstart', function(e) { e.stopPropagation(); }, { passive: true });
+  list.addEventListener('touchstart', function(e) { e.stopPropagation(); }, { passive: true });
+
   list.addEventListener('click', function(e) {
+    // Stop first so taps on list padding (not an item) also don't escape
+    // to the document-level outside-click handler and close us.
+    e.stopPropagation();
     const item = e.target.closest('.fish-dropdown-item');
     if (!item) return;
-    e.stopPropagation();
     const romaji = item.dataset.value || '';
     dropdown.dataset.value = romaji;
     if (romaji) {
@@ -319,9 +328,16 @@ document.addEventListener('click', function(e) {
 });
 
 // position:fixed means the list does not follow the trigger when the
-// page (or any ancestor) scrolls. Close it instead — simpler & robust
-// than constantly recomputing. Capture phase catches scrolls on any
-// scrollable ancestor, not just window.
+// page scrolls. Close it on window scroll. IMPORTANT: v3.02 used
+// useCapture=true which also fired for scrolls *inside* the list
+// (the list itself is overflow-y:auto, and a slight finger drag on
+// mobile triggers a tiny internal scroll), closing it before the
+// tap could land on an item. Fix:
+//   1. Drop useCapture — scroll events don't bubble, so the window
+//      listener only fires for window / document scrolls now, not
+//      for scrolls inside the list.
+//   2. Defensive: even if some browser routes an element scroll to
+//      window, skip closing when the scroll target is inside a list.
 function closeAllFishDropdowns() {
   document.querySelectorAll('.fish-dropdown.open').forEach(d => {
     d.classList.remove('open');
@@ -329,8 +345,14 @@ function closeAllFishDropdowns() {
     if (l) l.hidden = true;
   });
 }
-window.addEventListener('scroll', closeAllFishDropdowns, true);
-window.addEventListener('resize', closeAllFishDropdowns);
+function onPageScrollOrResize(e) {
+  if (e && e.target && e.target.closest && typeof e.target.closest === 'function') {
+    if (e.target.closest('.fish-dropdown-list')) return;
+  }
+  closeAllFishDropdowns();
+}
+window.addEventListener('scroll', onPageScrollOrResize, { passive: true });
+window.addEventListener('resize', onPageScrollOrResize);
 
 const cameraInput = document.getElementById('cameraInput');
 const photoGrid = document.getElementById('photoGrid');
