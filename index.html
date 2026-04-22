@@ -75,7 +75,11 @@
   .fish-dropdown-label.placeholder{color:#445566}
   .fish-dropdown-arrow{flex-shrink:0;color:var(--muted);font-size:12px;transition:transform .15s}
   .fish-dropdown.open .fish-dropdown-arrow{transform:rotate(180deg)}
-  .fish-dropdown-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;max-height:280px;overflow-y:auto;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+  /* position:fixed + JS-driven top/left/width avoids clipping by any
+     overflow:hidden ancestor (previous position:absolute got clipped
+     by .card / .card-body / .fish-row). JS sets coordinates on open
+     using the trigger's getBoundingClientRect(). */
+  .fish-dropdown-list{position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:6px;max-height:280px;overflow-y:auto;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.4)}
   .fish-dropdown-list[hidden]{display:none}
   .fish-dropdown-item{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--border);min-height:48px}
   .fish-dropdown-item:last-child{border-bottom:none}
@@ -90,7 +94,7 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v3.01</span>
+  <span>v3.02</span>
 </header>
 
 <div class="container">
@@ -261,6 +265,9 @@ function initFishDropdown(dropdown) {
     });
     const nowOpen = dropdown.classList.toggle('open');
     list.hidden = !nowOpen;
+    if (nowOpen) {
+      positionFishDropdownList(dropdown);
+    }
   });
 
   list.addEventListener('click', function(e) {
@@ -286,6 +293,20 @@ function initFishDropdown(dropdown) {
   });
 }
 
+// Position the list in viewport coordinates (position:fixed).
+// Using getBoundingClientRect on the trigger means the list escapes
+// any overflow:hidden ancestor (the previous position:absolute was
+// clipped by .card / .fish-row).
+function positionFishDropdownList(dropdown) {
+  const selected = dropdown.querySelector('.fish-dropdown-selected');
+  const list = dropdown.querySelector('.fish-dropdown-list');
+  if (!selected || !list) return;
+  const rect = selected.getBoundingClientRect();
+  list.style.left = rect.left + 'px';
+  list.style.top = (rect.bottom + 4) + 'px';
+  list.style.width = rect.width + 'px';
+}
+
 // Close all dropdowns when clicking outside any .fish-dropdown
 document.addEventListener('click', function(e) {
   if (!e.target.closest('.fish-dropdown')) {
@@ -296,6 +317,20 @@ document.addEventListener('click', function(e) {
     });
   }
 });
+
+// position:fixed means the list does not follow the trigger when the
+// page (or any ancestor) scrolls. Close it instead — simpler & robust
+// than constantly recomputing. Capture phase catches scrolls on any
+// scrollable ancestor, not just window.
+function closeAllFishDropdowns() {
+  document.querySelectorAll('.fish-dropdown.open').forEach(d => {
+    d.classList.remove('open');
+    const l = d.querySelector('.fish-dropdown-list');
+    if (l) l.hidden = true;
+  });
+}
+window.addEventListener('scroll', closeAllFishDropdowns, true);
+window.addEventListener('resize', closeAllFishDropdowns);
 
 const cameraInput = document.getElementById('cameraInput');
 const photoGrid = document.getElementById('photoGrid');
