@@ -68,6 +68,8 @@
   .fish-row input[type=number]{width:70px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;font-size:14px;border-radius:6px;outline:none;text-align:right}
   .fish-row input[type=number]:focus{border-color:var(--accent)}
   .fish-row .unit{color:var(--muted);font-size:13px;font-weight:700}
+  .fish-thumb{width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);flex-shrink:0;display:none}
+  .fish-thumb.visible{display:block}
 </style>
 </head>
 <body>
@@ -108,11 +110,11 @@
     <div class="card">
       <div class="card-title">Fish Catch (optional)</div>
       <div class="card-body" id="fishCatchBody">
-        <div class="fish-row"><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
-        <div class="fish-row"><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
-        <div class="fish-row"><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
-        <div class="fish-row"><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
-        <div class="fish-row"><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
+        <div class="fish-row"><img class="fish-thumb" alt=""><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
+        <div class="fish-row"><img class="fish-thumb" alt=""><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
+        <div class="fish-row"><img class="fish-thumb" alt=""><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
+        <div class="fish-row"><img class="fish-thumb" alt=""><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
+        <div class="fish-row"><img class="fish-thumb" alt=""><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
       </div>
     </div>
 
@@ -196,6 +198,13 @@ let fishMasterData = []; // cached from /api/fish-master
           opt.value = f.romaji;
           opt.textContent = f.romaji;
           sel.appendChild(opt);
+        });
+        sel.addEventListener('change', function() {
+          const img = this.closest('.fish-row').querySelector('.fish-thumb');
+          if (!this.value) { img.classList.remove('visible'); img.src = ''; return; }
+          img.src = 'https://gyotak-shop.pages.dev/images/' + encodeURIComponent(this.value) + '.jpg';
+          img.classList.add('visible');
+          img.onerror = function() { this.classList.remove('visible'); };
         });
       });
     }
