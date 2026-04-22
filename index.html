@@ -61,6 +61,13 @@
   .status-bar .step{flex:1;text-align:center;padding:6px;border-radius:6px;font-size:11px;font-weight:700;background:var(--bg);color:var(--muted);border:1px solid var(--border)}
   .status-bar .step.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
   .status-bar .step.done{background:rgba(63,185,80,.15);color:var(--success);border-color:var(--success)}
+  .fish-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .fish-row select{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;font-size:14px;border-radius:6px;outline:none;min-height:40px}
+  .fish-row select:focus{border-color:var(--accent)}
+  .fish-row .weight-wrap{display:flex;align-items:center;gap:4px;flex-shrink:0}
+  .fish-row input[type=number]{width:70px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px;font-size:14px;border-radius:6px;outline:none;text-align:right}
+  .fish-row input[type=number]:focus{border-color:var(--accent)}
+  .fish-row .unit{color:var(--muted);font-size:13px;font-weight:700}
 </style>
 </head>
 <body>
@@ -68,7 +75,7 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v2.5</span>
+  <span>v3.00</span>
 </header>
 
 <div class="container">
@@ -99,9 +106,20 @@
     </div>
 
     <div class="card">
+      <div class="card-title">Fish Catch (optional)</div>
+      <div class="card-body" id="fishCatchBody">
+        <div class="fish-row"><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
+        <div class="fish-row"><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
+        <div class="fish-row"><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
+        <div class="fish-row"><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
+        <div class="fish-row"><select class="fish-select"><option value="">--</option></select><div class="weight-wrap"><input type="number" class="fish-weight" step="0.1" min="0" placeholder="0.0"><span class="unit">kg</span></div></div>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="card-title">Comment</div>
       <div class="card-body">
-        <textarea class="finput" id="comment" placeholder="Fish species, weather, notes..." rows="3"></textarea>
+        <textarea class="finput" id="comment" placeholder="Weather, notes, event details, anything you want to share..." rows="3"></textarea>
       </div>
     </div>
 
@@ -162,6 +180,29 @@ const AUTH = 'Bearer gyotak-gas-2026-secret-key';
 
 let photos = [];
 let currentData = null;
+let fishMasterData = []; // cached from /api/fish-master
+
+// Fetch fish master on load
+(async function loadFishMaster() {
+  try {
+    const res = await fetch('https://line-harness.gyotak.workers.dev/api/fish-master');
+    const data = await res.json();
+    if (data.success && data.fish_master) {
+      fishMasterData = data.fish_master;
+      const selects = document.querySelectorAll('.fish-select');
+      selects.forEach(sel => {
+        fishMasterData.forEach(f => {
+          const opt = document.createElement('option');
+          opt.value = f.romaji;
+          opt.textContent = f.romaji;
+          sel.appendChild(opt);
+        });
+      });
+    }
+  } catch (e) {
+    console.warn('Fish master fetch failed, fallback to comment input:', e);
+  }
+})();
 
 const cameraInput = document.getElementById('cameraInput');
 const photoGrid = document.getElementById('photoGrid');
@@ -398,6 +439,26 @@ async function generate() {
     }
     form.append('comment', fullComment);
 
+    // Collect fish_items from dropdowns (v3)
+    const fishItems = [];
+    document.querySelectorAll('.fish-row').forEach(row => {
+      const sel = row.querySelector('.fish-select');
+      const wInput = row.querySelector('.fish-weight');
+      if (sel.value) {
+        const master = fishMasterData.find(f => f.romaji === sel.value);
+        if (master) {
+          fishItems.push({
+            romaji: master.romaji,
+            en: master.en,
+            th: master.th,
+            ja: master.ja,
+            weight_kg: parseFloat(wInput.value) || 0,
+          });
+        }
+      }
+    });
+    form.append('fish_items', JSON.stringify(fishItems));
+
     const res = await fetch(API_BASE + '/catch-report', {
       method: 'POST',
       headers: { 'Authorization': AUTH },
@@ -563,6 +624,8 @@ function reset() {
   document.getElementById('resultSection').classList.remove('show');
   photoGrid.innerHTML = '';
   document.getElementById('comment').value = '';
+  document.querySelectorAll('.fish-select').forEach(s => s.value = '');
+  document.querySelectorAll('.fish-weight').forEach(w => w.value = '');
   cameraInput.value = '';
   submitBtn.disabled = true;
   submitBtn.innerHTML = '📝 Generate Article';
