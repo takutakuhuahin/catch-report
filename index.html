@@ -500,6 +500,17 @@ function formatFileDate(file) {
   return `${d.getFullYear()}:${pad(d.getMonth()+1)}:${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
+// 端末の現在 tz オフセットからラベルを返す。仕入担当者が UTC / ICT / JST 等
+// 様々な tz 設定の端末を使うため「時刻が狂ってる」と誤解されるのを防ぐ。
+// 表示時刻自体は変換しない (端末ローカル tz の値そのまま)、ラベルのみ付与。
+function tzLabel() {
+  const o = -new Date().getTimezoneOffset() / 60;
+  if (o === 7) return 'ICT';
+  if (o === 0) return 'UTC';
+  if (o === 9) return 'JST';
+  return `UTC${o >= 0 ? '+' : ''}${o}`;
+}
+
 let hasGps = false;
 async function handleFiles(e) {
   const files = Array.from(e.target.files);
@@ -658,7 +669,7 @@ function showResult(data) {
       `<div class="img-card-header">📷 Photo ${i + 1}</div>` +
       `<div class="img-card-meta">🔐 Hash: ${esc(img.imageHash || '')}</div>` +
       `<div class="img-card-meta">📍 Location (GPS): ${esc(loc)}</div>` +
-      `<div class="img-card-meta">📅 Date & Time: ${esc(dt)}</div>` +
+      `<div class="img-card-meta">📅 Date & Time: ${esc(dt)} (${tzLabel()})</div>` +
       (img.r2ImageUrl ? `<img src="${img.r2ImageUrl}" alt="Photo ${i + 1}">` : '');
     imagesEl.appendChild(card);
   });
@@ -696,7 +707,7 @@ function updateCopyText() {
     parts.push('', `📷 Photo ${i + 1}`);
     parts.push(`🔐 Hash: ${img.imageHash || ''}`);
     parts.push(`📍 Location (GPS): ${loc}`);
-    parts.push(`📅 Date & Time: ${dt}`);
+    parts.push(`📅 Date & Time: ${dt} (${tzLabel()})`);
   });
   document.getElementById('copyText').textContent = parts.join('\n');
 }
@@ -746,7 +757,10 @@ async function publish() {
     publishBtn.style.display = 'none';
     document.getElementById('step3').className = 'step done';
     const msg = document.getElementById('successMsg');
-    msg.textContent = 'Saved (ID: ' + currentData.catchReportId.slice(0, 8) + '...)';
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const ts = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    msg.textContent = `Saved at ${ts} (${tzLabel()}) — ID: ${currentData.catchReportId.slice(0, 8)}...`;
     msg.classList.add('show');
   } catch (err) {
     document.getElementById('errMsg2').textContent = err.message;
