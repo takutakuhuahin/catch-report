@@ -94,7 +94,7 @@
 <header>
   <div class="dot"></div>
   <h1>GYOTAK Catch Report</h1>
-  <span>v3.03</span>
+  <span>v3.10</span>
 </header>
 
 <div class="container">
@@ -195,17 +195,38 @@
 
 <script>
 const API_BASE = 'https://line-harness.gyotak.workers.dev/gyotak';
-const AUTH = 'Bearer gyotak-gas-2026-secret-key';
+const LOGIN_URL = API_BASE + '/admin/login?redirect=' + encodeURIComponent(location.href);
 
 let photos = [];
 let currentData = null;
 let fishMasterData = []; // cached from /api/fish-master
 
+// Auth check on page load — redirect to login if no valid session
+async function apiFetch(url, opts = {}) {
+  opts.credentials = 'include';
+  const res = await fetch(url, opts);
+  if (res.status === 401) {
+    location.href = LOGIN_URL;
+    throw new Error('Session expired — redirecting to login');
+  }
+  return res;
+}
+
+(async function checkAuth() {
+  try {
+    const res = await fetch(API_BASE + '/admin/auth/me', { credentials: 'include' });
+    if (!res.ok) { location.href = LOGIN_URL; return; }
+  } catch {
+    location.href = LOGIN_URL; return;
+  }
+  loadFishMaster();
+})();
+
 // Fish thumbnail source (nothing hardcoded beyond this base)
 const FISH_THUMB_BASE = 'https://gyotak-shop.pages.dev/images/thumbs/';
 
-// Fetch fish master on load, then init custom dropdowns
-(async function loadFishMaster() {
+// Fetch fish master, then init custom dropdowns
+async function loadFishMaster() {
   try {
     const res = await fetch('https://line-harness.gyotak.workers.dev/api/fish-master');
     const data = await res.json();
@@ -216,7 +237,7 @@ const FISH_THUMB_BASE = 'https://gyotak-shop.pages.dev/images/thumbs/';
   } catch (e) {
     console.warn('Fish master fetch failed, fallback to comment input:', e);
   }
-})();
+}
 
 // Build one custom dropdown (populates list items + wires events).
 // Each list item: thumbnail + romaji name. Thumbnail 404 hides the img
@@ -621,9 +642,8 @@ async function generate() {
     });
     form.append('fish_items', JSON.stringify(fishItems));
 
-    const res = await fetch(API_BASE + '/catch-report', {
+    const res = await apiFetch(API_BASE + '/catch-report', {
       method: 'POST',
-      headers: { 'Authorization': AUTH },
       body: form,
     });
     if (!res.ok) {
@@ -740,9 +760,9 @@ async function publish() {
   document.getElementById('errMsg2').classList.remove('show');
 
   try {
-    const res = await fetch(API_BASE + '/catch-reports/' + currentData.catchReportId, {
+    const res = await apiFetch(API_BASE + '/catch-reports/' + currentData.catchReportId, {
       method: 'PATCH',
-      headers: { 'Authorization': AUTH, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title: document.getElementById('editTitle').value,
         body: document.getElementById('editBody').value,
